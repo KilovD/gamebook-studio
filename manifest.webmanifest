@@ -1,0 +1,16 @@
+{
+  "name": "Gamebook Studio",
+  "short_name": "Gamebook",
+  "description": "Write, organise, test and export interactive gamebooks. File-based, offline, no accounts.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1d1e21",
+  "theme_color": "#1d1e21",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

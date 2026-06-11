@@ -1,0 +1,2730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f2ed">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1d1e21">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Gamebook Studio</title>
+<style>
+/* ============================= THEME ============================= */
+:root{
+  --bg:#f4f2ed; --bg2:#fbfaf7; --bg3:#eceae3; --bg4:#e3e0d6;
+  --fg:#21201c; --fg-dim:#6e6a5e; --fg-faint:#a09b8c;
+  --border:#d8d4c8; --border2:#c5c0b1;
+  --accent:#6f5bd0; --accent-soft:#6f5bd022; --accent-fg:#ffffff;
+  --danger:#c23b3b; --danger-soft:#c23b3b1a; --warn:#b07d18; --warn-soft:#b07d181a; --ok:#3d8f4e;
+  --st-todo:#d2a106; --st-draft:#4f87d4; --st-review:#b266c9; --st-done:#46a25a;
+  --sel:#6f5bd01c; --shadow:0 6px 24px rgba(30,25,10,.18);
+  --serif:Georgia,'Iowan Old Style','Times New Roman',serif;
+  --sans:system-ui,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,Consolas,'Cascadia Mono',monospace;
+}
+body[data-theme="dark"]{
+  --bg:#1d1e21; --bg2:#26272b; --bg3:#2e2f34; --bg4:#393a40;
+  --fg:#e8e6e1; --fg-dim:#a4a09a; --fg-faint:#6d6a64;
+  --border:#3a3b41; --border2:#4a4b52;
+  --accent:#8d7bef; --accent-soft:#8d7bef2a; --accent-fg:#16151d;
+  --danger:#e06464; --danger-soft:#e064641f; --warn:#d6a23a; --warn-soft:#d6a23a1f; --ok:#5cb86f;
+  --st-todo:#d8b13a; --st-draft:#6d9fe0; --st-review:#c184d6; --st-done:#5cb86f;
+  --sel:#8d7bef26; --shadow:0 8px 28px rgba(0,0,0,.5);
+}
+/* ============================= BASE ============================= */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 var(--sans);overflow:hidden;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;min-height:30px}
+button:hover{background:var(--bg4)}
+button:disabled{opacity:.45;cursor:default}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
+button.primary:hover{filter:brightness(1.08)}
+button.danger{color:var(--danger);border-color:var(--danger)}
+button.ghost{background:transparent;border-color:transparent}
+button.ghost:hover{background:var(--bg3)}
+button.iconbtn{padding:4px 8px;min-width:32px}
+input[type=text],input[type=number],input[type=search],select,textarea{
+  background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;min-height:32px;outline:none;max-width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical}
+::placeholder{color:var(--fg-faint)}
+.kbd{font:11px var(--mono);background:var(--bg3);border:1px solid var(--border2);border-bottom-width:2px;border-radius:4px;padding:1px 5px;white-space:nowrap}
+.dim{color:var(--fg-dim)} .faint{color:var(--fg-faint)} .small{font-size:12px}
+.hidden{display:none!important}
+.spacer{flex:1}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+a{color:var(--accent)}
+/* ============================= TOPBAR ============================= */
+#topbar{height:48px;display:flex;align-items:center;gap:8px;padding:0 10px;background:var(--bg2);border-bottom:1px solid var(--border);position:relative;z-index:30}
+#bookTitle{font-weight:700;max-width:26vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+#bookTitle:hover{color:var(--accent)}
+#modeTabs{display:flex;gap:2px;background:var(--bg3);padding:3px;border-radius:8px}
+#modeTabs button{border:none;background:transparent;border-radius:6px;padding:4px 14px;min-height:28px;color:var(--fg-dim)}
+#modeTabs button.active{background:var(--bg2);color:var(--fg);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+#issuesBadge{border-radius:14px;font-size:12px;padding:3px 10px;border:1px solid var(--border)}
+#issuesBadge.err{color:var(--danger);border-color:var(--danger);background:var(--danger-soft)}
+#issuesBadge.warn{color:var(--warn);border-color:var(--warn);background:var(--warn-soft)}
+#issuesBadge.ok{color:var(--ok)}
+#saveState{font-size:12px;color:var(--fg-dim);white-space:nowrap}
+#saveState.dirty{color:var(--warn)}
+/* ============================= MENU ============================= */
+.menupanel{position:absolute;top:46px;left:8px;min-width:250px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:6px;z-index:100;max-height:calc(100vh - 60px);overflow:auto}
+.mitem{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:none;border-radius:6px;padding:8px 10px}
+.mitem:hover{background:var(--bg3)}
+.mitem .kbd{margin-left:auto}
+.msep{height:1px;background:var(--border);margin:5px 8px}
+.mhead{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--fg-faint);padding:6px 10px 2px}
+/* ============================= LAYOUT ============================= */
+#main{height:calc(100% - 48px);position:relative}
+.view{position:absolute;inset:0;display:none}
+.view.active{display:flex}
+/* ---- write mode ---- */
+#view-write{flex-direction:row}
+#sidebar{width:280px;min-width:280px;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column}
+#sidebar .sbtools{display:flex;gap:6px;padding:8px;border-bottom:1px solid var(--border)}
+#sidebar .sbtools input{flex:1;min-width:0}
+#sectionList{flex:1;overflow-y:auto;padding:4px}
+.slitem{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;user-select:none}
+.slitem:hover{background:var(--bg3)}
+.slitem.sel{background:var(--sel)}
+.slitem .num{font:12px var(--mono);color:var(--fg-dim);min-width:30px;text-align:right}
+.slitem .ttl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slitem .ttl.untitled{color:var(--fg-faint);font-style:italic}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot.todo{background:var(--st-todo)} .dot.draft{background:var(--st-draft)} .dot.review{background:var(--st-review)} .dot.done{background:var(--st-done)}
+.issuedot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.issuedot.err{background:var(--danger)} .issuedot.warn{background:var(--warn)}
+#sbCount{padding:6px 12px;border-top:1px solid var(--border);font-size:12px;color:var(--fg-dim)}
+#editorWrap{flex:1;overflow-y:auto}
+#editor{max-width:880px;margin:0 auto;padding:18px 22px 80px}
+.edhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+#edNumber{width:74px;font-family:var(--mono);text-align:center;font-weight:700}
+#edTitle{flex:1;min-width:160px;font-weight:600;font-size:16px}
+#edText{width:100%;font:16px/1.6 var(--serif);min-height:200px;padding:12px 14px}
+.edmeta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 14px}
+.seclabel{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-dim);font-weight:700;margin:18px 0 6px;display:flex;align-items:center;gap:8px}
+.seclabel .spacer{flex:1}
+/* choices */
+.choice{border:1px solid var(--border);border-radius:8px;background:var(--bg2);margin-bottom:8px}
+.choice.broken{border-color:var(--danger)}
+.chmain{display:flex;gap:6px;align-items:center;padding:8px;flex-wrap:wrap}
+.chmain .chtext{flex:2;min-width:140px}
+.chmain .tpick{flex:1;min-width:130px}
+.chsub{padding:0 8px 8px;display:flex;flex-direction:column;gap:6px}
+.rulesline{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px}
+.rulerow{display:flex;gap:4px;align-items:center;flex-wrap:wrap;background:var(--bg3);border-radius:6px;padding:3px 4px 3px 8px;font-size:13px}
+.rulerow select,.rulerow input{min-height:26px;padding:2px 6px;font-size:13px;background:var(--bg2)}
+.rulerow input[type=number]{width:64px}
+.rulerow .x{border:none;background:none;color:var(--fg-dim);min-height:22px;min-width:22px;padding:0 4px}
+.rulerow .x:hover{color:var(--danger)}
+.addrule{font-size:12px;padding:2px 8px;min-height:24px;color:var(--fg-dim)}
+.checkbox-line{display:flex;gap:6px;align-items:center;font-size:13px;flex-wrap:wrap}
+/* target picker */
+.tpick{position:relative;display:flex}
+.tpick input{width:100%;font-size:13px}
+.tpick input.empty{border-color:var(--danger)}
+.tpick .ddrop{position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;box-shadow:var(--shadow);z-index:60;max-height:240px;overflow:auto;margin-top:2px}
+.ddi{padding:6px 10px;cursor:pointer;display:flex;gap:8px;align-items:baseline}
+.ddi.hl,.ddi:hover{background:var(--sel)}
+.ddi .num{font:12px var(--mono);color:var(--fg-dim);min-width:26px;text-align:right}
+.ddi.create{color:var(--accent);font-weight:600}
+/* combat editor */
+.combatbox{border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:8px;background:var(--bg2);padding:10px;display:flex;flex-direction:column;gap:8px}
+.enemyrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.enemyrow input[type=text]{flex:1;min-width:110px}
+.enemyrow input[type=number]{width:70px}
+.fieldlab{font-size:12px;color:var(--fg-dim)}
+/* backlinks + issues */
+.linkchip{display:inline-flex;gap:5px;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:2px 10px;margin:2px 4px 2px 0;cursor:pointer;font-size:12px}
+.linkchip:hover{border-color:var(--accent);color:var(--accent)}
+.isline{display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:13px}
+.isline .tag{font-size:11px;border-radius:4px;padding:1px 6px;font-weight:700}
+.isline .tag.err{background:var(--danger-soft);color:var(--danger)}
+.isline .tag.warn{background:var(--warn-soft);color:var(--warn)}
+.isline .where{font-family:var(--mono);font-size:12px;color:var(--accent);cursor:pointer;white-space:nowrap}
+/* ---- sheet mode ---- */
+#view-sheet{flex-direction:column}
+.sheettools{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:wrap}
+.sheettools input[type=search]{width:230px}
+#sheetWrap{flex:1;overflow:auto}
+#sheetWrap table{border-collapse:collapse;width:100%;font-size:13px}
+#sheetWrap th{position:sticky;top:0;background:var(--bg3);text-align:left;padding:7px 10px;border-bottom:2px solid var(--border2);cursor:pointer;user-select:none;white-space:nowrap;z-index:5}
+#sheetWrap th:hover{color:var(--accent)}
+#sheetWrap td{padding:4px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+#sheetWrap tr:hover td{background:var(--bg3)}
+#sheetWrap td.num{font-family:var(--mono);color:var(--fg-dim);cursor:pointer;white-space:nowrap}
+#sheetWrap td.num:hover{color:var(--accent)}
+#sheetWrap td input[type=text]{width:100%;min-width:140px;background:transparent;border-color:transparent;min-height:26px;padding:2px 6px}
+#sheetWrap td input[type=text]:hover{border-color:var(--border)}
+#sheetWrap td input[type=text]:focus{background:var(--bg2);border-color:var(--accent)}
+#sheetWrap td select{min-height:26px;padding:2px 4px;font-size:12px;background:transparent;border-color:transparent}
+#sheetWrap td select:hover{border-color:var(--border)}
+#sheetWrap td .cnt{font-family:var(--mono)}
+#sheetWrap td .iss{cursor:pointer;font-weight:700}
+#sheetWrap td .iss.err{color:var(--danger)} #sheetWrap td .iss.warn{color:var(--warn)}
+/* ---- graph mode ---- */
+#view-graph{flex-direction:column}
+#graphBody{flex:1;display:flex;min-height:0;position:relative}
+#graphWrap{flex:1;position:relative;overflow:hidden;background:var(--bg)}
+#graphSide{width:320px;min-width:320px;border-left:1px solid var(--border);background:var(--bg2);overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+#graphSide input[type=text]{width:100%}
+#graphSide textarea{font:14px/1.55 var(--serif);min-height:140px;width:100%}
+#graphSide .gshead{display:flex;gap:6px;align-items:center}
+#graphSide .gsnum{font:700 14px var(--mono);color:var(--fg-dim)}
+.gchoice{display:flex;gap:6px;align-items:center}
+.gchoice input{flex:1;min-width:50px;font-size:13px;min-height:28px;padding:3px 7px}
+.gchip{font:12px var(--mono);background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:2px 9px;cursor:pointer;white-space:nowrap}
+.gchip:hover{border-color:var(--accent);color:var(--accent)}
+.gchip.ro{cursor:default}
+.gchip.ro:hover{border-color:var(--border);color:inherit}
+.ghint{margin-left:4px}
+@media (max-width:1100px){.ghint{display:none}}
+@media (max-width:920px){
+  #graphSide{position:absolute;right:0;top:0;bottom:0;z-index:40;box-shadow:var(--shadow)}
+}
+#graphCanvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+#graphCanvas.panning{cursor:grabbing}
+.graphtools{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:wrap}
+.graphlegend{display:flex;gap:12px;align-items:center;font-size:12px;color:var(--fg-dim);flex-wrap:wrap}
+.graphlegend .li{display:flex;gap:5px;align-items:center}
+/* ---- play mode ---- */
+#view-play{flex-direction:row}
+#playMain{flex:1;overflow-y:auto}
+#playPage{max-width:680px;margin:0 auto;padding:26px 24px 90px}
+.pp-num{font:700 15px var(--mono);color:var(--fg-dim);text-align:center;letter-spacing:.2em}
+.pp-title{font:700 22px var(--serif);text-align:center;margin:4px 0 18px}
+.pp-text{font:17px/1.65 var(--serif);white-space:normal}
+.pp-text p{margin:0 0 1em}
+.pp-fx{margin:14px 0;padding:8px 12px;background:var(--accent-soft);border-radius:8px;font-size:13px}
+.pp-choices{margin-top:22px;display:flex;flex-direction:column;gap:8px}
+.pchoice{display:block;width:100%;text-align:left;padding:11px 14px;border-radius:8px;background:var(--bg2);border:1px solid var(--border2);font-size:15px}
+.pchoice:hover:not(:disabled){border-color:var(--accent);background:var(--sel)}
+.pchoice .why{display:block;font-size:12px;color:var(--danger);margin-top:3px}
+.pending{ text-align:center;margin-top:26px;padding:18px;border-radius:10px;border:2px solid var(--border2);font:700 18px var(--serif)}
+.pending.victory{border-color:var(--ok);color:var(--ok)}
+.pending.death{border-color:var(--danger);color:var(--danger)}
+.pcombat{margin-top:20px;border:1px solid var(--danger);border-radius:10px;padding:14px;background:var(--danger-soft)}
+.pcombat h3{margin:0 0 8px;font-size:15px}
+.enemybar{display:flex;gap:8px;align-items:center;margin:4px 0;font-size:14px}
+.enemybar .hp{flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden}
+.enemybar .hp i{display:block;height:100%;background:var(--danger)}
+.enemybar.dead{opacity:.45;text-decoration:line-through}
+#playSide{width:300px;min-width:300px;border-left:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow-y:auto}
+#playSide .ps-sec{padding:12px 14px;border-bottom:1px solid var(--border)}
+#playSide h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-dim)}
+.statrow{display:flex;align-items:center;gap:8px;margin:3px 0}
+.statrow .sname{flex:1}
+.statrow input{width:64px;min-height:26px;padding:2px 6px;text-align:center;font-family:var(--mono)}
+.invitem{display:flex;align-items:center;gap:6px;padding:2px 0}
+.invitem .x{margin-left:auto}
+#playLog{font-size:12px;font-family:var(--mono);padding:10px 14px;display:flex;flex-direction:column;gap:3px}
+#playLog .dice{color:var(--accent)} #playLog .fx{color:var(--ok)} #playLog .combat{color:var(--danger)} #playLog .nav{color:var(--fg-dim);margin-top:5px} #playLog .end,#playLog .warn{color:var(--warn);font-weight:700}
+.playtools{display:flex;gap:6px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:wrap;font-size:13px}
+/* ============================= OVERLAYS ============================= */
+#paletteWrap{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;display:flex;justify-content:center;align-items:flex-start;padding-top:10vh}
+#palette{width:min(620px,92vw);background:var(--bg2);border:1px solid var(--border2);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+#paletteInput{width:100%;border:none;background:transparent;padding:14px 16px;font-size:16px;border-bottom:1px solid var(--border)}
+#paletteList{max-height:50vh;overflow-y:auto;padding:6px}
+.pli{display:flex;gap:10px;align-items:center;padding:8px 12px;border-radius:8px;cursor:pointer}
+.pli.hl{background:var(--sel)}
+.pli .num{font:12px var(--mono);color:var(--fg-dim);min-width:30px;text-align:right}
+.pli .hint{margin-left:auto;font-size:11px;color:var(--fg-faint)}
+#modalWrap{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:210;display:flex;justify-content:center;align-items:center;padding:18px}
+.modal{width:min(680px,94vw);max-height:88vh;overflow-y:auto;background:var(--bg2);border:1px solid var(--border2);border-radius:12px;box-shadow:var(--shadow);padding:18px 20px}
+.modal h2{margin:0 0 14px;font-size:17px}
+.modal .mbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.modal .field{margin-bottom:10px}
+.modal .field>label{display:block;font-size:12px;color:var(--fg-dim);margin-bottom:3px}
+.modal table{border-collapse:collapse;width:100%;font-size:13px}
+.modal table th{text-align:left;font-size:11px;text-transform:uppercase;color:var(--fg-dim);padding:4px 6px}
+.modal table td{padding:3px 4px}
+.modal table input[type=text]{width:100%;min-width:60px}
+.modal table input[type=number]{width:70px}
+.tabbar{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.tabbar button{border:none;background:none;border-radius:6px 6px 0 0;padding:7px 14px;color:var(--fg-dim);border-bottom:2px solid transparent}
+.tabbar button.active{color:var(--fg);font-weight:600;border-bottom-color:var(--accent)}
+#toasts{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:300;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:var(--fg);color:var(--bg);padding:9px 18px;border-radius:8px;font-size:13px;box-shadow:var(--shadow);max-width:90vw}
+.toast.err{background:var(--danger);color:#fff}
+#banner{display:flex;gap:10px;align-items:center;background:var(--warn-soft);border-bottom:1px solid var(--warn);padding:8px 14px;font-size:13px}
+/* ============================= RESPONSIVE ============================= */
+#sbToggle,#psToggle{display:none}
+@media (max-width:920px){
+  #sidebar{position:absolute;left:0;top:0;bottom:0;z-index:40;box-shadow:var(--shadow);transform:translateX(-102%);transition:transform .18s ease}
+  #view-write.sb-open #sidebar{transform:none}
+  #sbToggle{display:inline-block}
+  #playSide{position:absolute;right:0;top:0;bottom:0;z-index:40;box-shadow:var(--shadow);transform:translateX(102%);transition:transform .18s ease}
+  #view-play.ps-open #playSide{transform:none}
+  #psToggle{display:inline-block}
+  #bookTitle{max-width:18vw}
+}
+@media (max-width:640px){
+  #topbar{padding:0 6px;gap:5px}
+  #modeTabs button{padding:4px 8px;font-size:13px}
+  #bookTitle{display:none}
+  #saveState{display:none}
+  #editor{padding:12px 12px 80px}
+  #playPage{padding:18px 14px 80px}
+}
+@media print{ #topbar,#sidebar,#toasts{display:none} }
+</style>
+</head>
+<body data-theme="dark">
+
+<header id="topbar">
+  <button id="menuBtn" class="iconbtn ghost" title="Menu">&#9776;</button>
+  <button id="sbToggle" class="iconbtn ghost" title="Sections">&#9636;</button>
+  <div id="bookTitle" title="Book settings">Untitled</div>
+  <nav id="modeTabs">
+    <button data-mode="write" title="Write (Ctrl+1)">Write</button>
+    <button data-mode="sheet" title="Sheet (Ctrl+2)">Sheet</button>
+    <button data-mode="graph" title="Graph (Ctrl+3)">Graph</button>
+    <button data-mode="play" title="Play (Ctrl+4)">Play</button>
+  </nav>
+  <div class="spacer"></div>
+  <button id="issuesBadge" title="Validation issues">&#10003;</button>
+  <div id="saveState">Saved</div>
+  <button id="saveBtn" title="Save (Ctrl+S)">Save</button>
+  <button id="psToggle" class="iconbtn ghost hidden" title="Character sheet">&#9783;</button>
+</header>
+<div id="menuPanel" class="menupanel hidden"></div>
+<div id="bannerWrap"></div>
+
+<main id="main">
+  <section id="view-write" class="view">
+    <aside id="sidebar">
+      <div class="sbtools">
+        <input id="sbSearch" type="search" placeholder="Filter (text or #tag)&hellip;">
+        <button id="sbNew" class="primary iconbtn" title="New section (Alt+N)">+</button>
+      </div>
+      <div id="sectionList"></div>
+      <div id="sbCount"></div>
+    </aside>
+    <div id="editorWrap"><div id="editor"></div></div>
+  </section>
+
+  <section id="view-sheet" class="view">
+    <div class="sheettools">
+      <input id="shSearch" type="search" placeholder="Filter (text, #tag or is:status)&hellip;">
+      <span id="shCount" class="dim small"></span>
+      <div class="spacer"></div>
+      <button id="shNew">+ New section</button>
+    </div>
+    <div id="sheetWrap"></div>
+  </section>
+
+  <section id="view-graph" class="view">
+    <div class="graphtools">
+      <button id="gNew" class="primary" title="Add a section in the middle of the view">+ Section</button>
+      <button id="gFit">Fit</button>
+      <button id="gZoomIn" class="iconbtn">+</button>
+      <button id="gZoomOut" class="iconbtn">&minus;</button>
+      <button id="gRelayout" title="Recompute automatic layout (clears manual positions)">Re-layout</button>
+      <label class="row small dim"><input type="checkbox" id="gShowTitles" checked> Titles</label>
+      <span class="small faint ghint">double-click canvas: new section &middot; drag node: arrange &middot; drag from &#8853;: link</span>
+      <div class="spacer"></div>
+      <div class="graphlegend">
+        <span class="li"><span class="dot todo"></span>Todo</span>
+        <span class="li"><span class="dot draft"></span>Draft</span>
+        <span class="li"><span class="dot review"></span>Review</span>
+        <span class="li"><span class="dot done"></span>Done</span>
+        <span class="li"><span class="issuedot err"></span>Issue</span>
+      </div>
+    </div>
+    <div id="graphBody">
+      <div id="graphWrap"><canvas id="graphCanvas"></canvas></div>
+      <aside id="graphSide" class="hidden"></aside>
+    </div>
+  </section>
+
+  <section id="view-play" class="view">
+    <div id="playMain">
+      <div class="playtools">
+        <button id="plRestart" title="Restart from the beginning">&#8635; Restart</button>
+        <button id="plFromHere" title="Start from the section open in Write mode">Play from current</button>
+        <button id="plBack" title="Undo last choice">&larr; Back</button>
+        <span class="dim small">Seed <span id="plSeed" class="kbd"></span></span>
+        <button id="plReseed" class="ghost small" title="New random seed">reroll</button>
+        <div class="spacer"></div>
+        <button id="plCopyLog" class="small ghost">Copy transcript</button>
+      </div>
+      <div id="playPage"></div>
+    </div>
+    <aside id="playSide">
+      <div class="ps-sec"><h4>Stats</h4><div id="psStats"></div></div>
+      <div class="ps-sec"><h4>Inventory</h4><div id="psInv"></div></div>
+      <div class="ps-sec"><h4>Conditions</h4><div id="psFlags"></div></div>
+      <div class="ps-sec" style="flex:1"><h4>Log</h4><div id="playLog"></div></div>
+    </aside>
+  </section>
+</main>
+
+<div id="paletteWrap" class="hidden">
+  <div id="palette">
+    <input id="paletteInput" type="text" placeholder="Type a section number, title or command&hellip;" autocomplete="off">
+    <div id="paletteList"></div>
+  </div>
+</div>
+<div id="modalWrap" class="hidden"></div>
+<div id="toasts"></div>
+<input type="file" id="fileInput" class="hidden" accept=".json,.gamebook,application/json">
+
+<!-- ====================================================================
+     RULES ENGINE — standalone, shared verbatim with the exported player.
+     No DOM access, no app state: pure functions over (book, playState).
+===================================================================== -->
+<script id="engine-src">
+var Engine = (function(){
+'use strict';
+function hash32(a,b){let h=(a^0x9E3779B9)>>>0;h=Math.imul(h^(h>>>16),0x85EBCA6B)>>>0;h=(h+b)>>>0;h=Math.imul(h^(h>>>13),0xC2B2AE35)>>>0;return (h^(h>>>16))>>>0;}
+function rand01(rng){var t=(hash32(rng.seed>>>0,rng.n++>>>0)+0x6D2B79F5)>>>0;var r=Math.imul(t^(t>>>15),1|t);r=(r+Math.imul(r^(r>>>7),61|r))^r;return ((r^(r>>>14))>>>0)/4294967296;}
+function parseDice(str){
+  if(str==null) return null;
+  var s=String(str).trim().toLowerCase().replace(/\s+/g,'');
+  if(/^[+-]?\d+$/.test(s)) return {n:0,sides:0,mod:parseInt(s,10)};
+  var m=s.match(/^(\d{0,3})d(\d{1,4})([+-]\d{1,4})?$/);
+  if(!m) return null;
+  return {n:m[1]?parseInt(m[1],10):1,sides:parseInt(m[2],10),mod:m[3]?parseInt(m[3],10):0};
+}
+function diceText(spec){
+  if(!spec) return '?';
+  if(spec.n===0) return String(spec.mod);
+  return spec.n+'d'+spec.sides+(spec.mod>0?'+'+spec.mod:(spec.mod<0?String(spec.mod):''));
+}
+function rollSpec(rng,spec){
+  if(!spec) return {total:0,rolls:[]};
+  var rolls=[],t=spec.mod;
+  for(var i=0;i<spec.n;i++){var r=1+Math.floor(rand01(rng)*spec.sides);rolls.push(r);t+=r;}
+  return {total:t,rolls:rolls};
+}
+function section(book,id){for(var i=0;i<book.sections.length;i++)if(book.sections[i].id===id)return book.sections[i];return null;}
+function statDef(book,id){for(var i=0;i<book.stats.length;i++)if(book.stats[i].id===id)return book.stats[i];return null;}
+function itemDef(book,id){for(var i=0;i<book.items.length;i++)if(book.items[i].id===id)return book.items[i];return null;}
+function flagDef(book,id){for(var i=0;i<book.flags.length;i++)if(book.flags[i].id===id)return book.flags[i];return null;}
+function nm(def,id){return def&&def.name?def.name:'['+id+']';}
+function clampStat(book,id,v){
+  var d=statDef(book,id); if(!d) return v;
+  if(d.min!==''&&d.min!=null&&isFinite(+d.min)) v=Math.max(v,+d.min);
+  if(d.max!==''&&d.max!=null&&isFinite(+d.max)) v=Math.min(v,+d.max);
+  return v;
+}
+function log(st,msg,kind){st.log.push({t:kind||'info',m:msg});}
+function cmp(v,op,t){
+  switch(op){case '>=':return v>=t;case '<=':return v<=t;case '>':return v>t;case '<':return v<t;case '!=':return v!==t;default:return v===t;}
+}
+function newState(book,startId,seed){
+  var st={stats:{},items:[],flags:[],at:null,rng:{seed:(seed>>>0)||1,n:0},log:[],fxFrom:0,turns:0,ended:null,combat:null,visited:[]};
+  for(var i=0;i<book.stats.length;i++){
+    var sd=book.stats[i];
+    var spec=parseDice(sd.initial==null||sd.initial===''?'0':sd.initial);
+    var v=0;
+    if(spec){var r=rollSpec(st.rng,spec);v=r.total;if(spec.n>0)log(st,nm(sd,sd.id)+': rolled '+diceText(spec)+' → '+r.total,'dice');}
+    st.stats[sd.id]=clampStat(book,sd.id,v);
+  }
+  for(var j=0;j<book.items.length;j++) if(book.items[j].startWith) st.items.push(book.items[j].id);
+  enter(book,st,startId||book.settings.start);
+  return st;
+}
+function applyEffect(book,st,e){
+  if(!e||!e.t) return;
+  var i;
+  switch(e.t){
+    case 'addItem': if(st.items.indexOf(e.item)<0)st.items.push(e.item); log(st,'Gained: '+nm(itemDef(book,e.item),e.item),'fx'); break;
+    case 'removeItem': i=st.items.indexOf(e.item); if(i>=0)st.items.splice(i,1); log(st,'Lost: '+nm(itemDef(book,e.item),e.item),'fx'); break;
+    case 'setFlag': if(st.flags.indexOf(e.flag)<0)st.flags.push(e.flag); log(st,'Now: '+nm(flagDef(book,e.flag),e.flag),'fx'); break;
+    case 'clearFlag': i=st.flags.indexOf(e.flag); if(i>=0)st.flags.splice(i,1); log(st,'No longer: '+nm(flagDef(book,e.flag),e.flag),'fx'); break;
+    case 'statAdd': {var amt=+e.amount||0; st.stats[e.stat]=clampStat(book,e.stat,(st.stats[e.stat]||0)+amt); log(st,nm(statDef(book,e.stat),e.stat)+' '+(amt>=0?'+':'')+amt+' → '+st.stats[e.stat],'fx'); break;}
+    case 'statSet': st.stats[e.stat]=clampStat(book,e.stat,+e.value||0); log(st,nm(statDef(book,e.stat),e.stat)+' set to '+st.stats[e.stat],'fx'); break;
+    case 'statRoll': {var sp=parseDice(e.dice||'1d6'); var rr=rollSpec(st.rng,sp); st.stats[e.stat]=clampStat(book,e.stat,rr.total); log(st,'Rolled '+diceText(sp)+' for '+nm(statDef(book,e.stat),e.stat)+' → '+rr.total,'dice'); break;}
+  }
+}
+function applyEffects(book,st,effs){
+  if(effs) for(var i=0;i<effs.length;i++) applyEffect(book,st,effs[i]);
+  checkDeath(book,st);
+}
+function checkDeath(book,st){
+  if(st.ended||st.combat) return;
+  var ss=book.settings.staminaStat;
+  if(ss&&st.stats[ss]!=null&&st.stats[ss]<=0){
+    st.ended={kind:'death',msg:nm(statDef(book,ss),ss)+' has reached zero.'};
+    log(st,'You have died.','end');
+  }
+}
+function reqMet(book,st,r){
+  switch(r.t){
+    case 'hasItem': return {ok:st.items.indexOf(r.item)>=0,text:'requires '+nm(itemDef(book,r.item),r.item)};
+    case 'noItem': return {ok:st.items.indexOf(r.item)<0,text:'requires not carrying '+nm(itemDef(book,r.item),r.item)};
+    case 'flagSet': return {ok:st.flags.indexOf(r.flag)>=0,text:'requires '+nm(flagDef(book,r.flag),r.flag)};
+    case 'flagClear': return {ok:st.flags.indexOf(r.flag)<0,text:'requires not '+nm(flagDef(book,r.flag),r.flag)};
+    case 'statCmp': {var v=st.stats[r.stat]||0;var t=+r.value||0;return {ok:cmp(v,r.op||'>=',t),text:'requires '+nm(statDef(book,r.stat),r.stat)+' '+(r.op||'>=')+' '+t};}
+    default: return {ok:true,text:''};
+  }
+}
+function choiceAccess(book,st,ch){
+  var reasons=[],ok=true,rs=ch.requires||[];
+  for(var i=0;i<rs.length;i++){var m=reqMet(book,st,rs[i]);if(!m.ok){ok=false;reasons.push(m.text);}}
+  return {ok:ok,reasons:reasons};
+}
+function visibleChoices(book,st){
+  var sec=section(book,st.at); if(!sec) return [];
+  var out=[];
+  for(var i=0;i<sec.choices.length;i++){
+    var ch=sec.choices[i];
+    var a=choiceAccess(book,st,ch);
+    if(!a.ok&&ch.hideIfUnmet) continue;
+    out.push({ch:ch,idx:i,ok:a.ok,reasons:a.reasons});
+  }
+  return out;
+}
+function choose(book,st,idx){
+  if(st.ended||st.combat) return;
+  var sec=section(book,st.at); if(!sec) return;
+  var ch=sec.choices[idx]; if(!ch) return;
+  var a=choiceAccess(book,st,ch); if(!a.ok) return;
+  st.fxFrom=st.log.length;
+  applyEffects(book,st,ch.effects);
+  if(st.ended) return;
+  if(ch.kind==='check'){
+    var c=ch.check||{};
+    var spec=parseDice(c.dice||'2d6');
+    var r=rollSpec(st.rng,spec);
+    var sv=st.stats[c.stat]||0;
+    var ok=cmp(r.total,c.op||'<=',sv);
+    log(st,'Test '+nm(statDef(book,c.stat),c.stat)+': '+diceText(spec)+' → '+r.total+(r.rolls.length?' ('+r.rolls.join(', ')+')':'')+' vs '+sv+' — '+(ok?'SUCCESS':'FAILURE'),'dice');
+    enter(book,st,ok?c.success:c.fail);
+  } else {
+    enter(book,st,ch.target);
+  }
+}
+function enter(book,st,id){
+  if(st.ended) return;
+  st.at=id; st.turns++;
+  var sec=section(book,id);
+  if(!sec){st.ended={kind:'error',msg:'Broken link — target section does not exist.'};log(st,'ERROR: broken link.','end');return;}
+  st.visited.push(id);
+  log(st,'— '+sec.number+(sec.title?'. '+sec.title:'')+' —','nav');
+  applyEffects(book,st,sec.onEnter);
+  if(st.ended) return;
+  if(sec.combat&&sec.combat.enemies&&sec.combat.enemies.length){
+    var enemies=sec.combat.enemies.map(function(e){return {name:e.name||'Enemy',skill:+e.skill||0,stamina:+e.stamina||0,max:+e.stamina||1};});
+    st.combat={def:sec.combat,enemies:enemies,cur:0,round:1};
+    log(st,'COMBAT: '+enemies.map(function(e){return e.name+' (SKILL '+e.skill+', STAMINA '+e.stamina+')';}).join('; '),'combat');
+  } else if(sec.ending){
+    st.ended={kind:sec.ending.kind||'end',msg:''};
+  }
+}
+function combatDamage(book,cb){
+  if(cb.def.damage!=null&&cb.def.damage!=='')return +cb.def.damage;
+  return book.settings.damage!=null?+book.settings.damage:2;
+}
+function combatRound(book,st){
+  var cb=st.combat; if(!cb||st.ended) return;
+  st.fxFrom=st.log.length;
+  var dmg=combatDamage(book,cb);
+  var skillStat=book.settings.skillStat, stamStat=book.settings.staminaStat;
+  var e=cb.enemies[cb.cur];
+  var pr=rollSpec(st.rng,parseDice('2d6')), er=rollSpec(st.rng,parseDice('2d6'));
+  var ps=skillStat?(st.stats[skillStat]||0):0;
+  var pAS=pr.total+ps, eAS=er.total+e.skill;
+  var msg='Round '+cb.round+' vs '+e.name+': you '+pAS+', foe '+eAS;
+  if(pAS>eAS){e.stamina-=dmg;msg+=' — you strike! ('+Math.max(0,e.stamina)+'/'+e.max+')';}
+  else if(eAS>pAS){
+    if(stamStat){st.stats[stamStat]=clampStat(book,stamStat,(st.stats[stamStat]||0)-dmg);msg+=' — you are wounded ('+st.stats[stamStat]+' left)';}
+    else msg+=' — you are struck (no stamina stat set)';
+  } else msg+=' — blades clash, no harm done';
+  log(st,msg,'combat');
+  cb.round++;
+  if(e.stamina<=0){
+    log(st,e.name+' is defeated!','combat');
+    cb.cur++;
+    if(cb.cur>=cb.enemies.length){
+      var win=cb.def.win; st.combat=null;
+      log(st,'Victory!','combat');
+      checkDeath(book,st);
+      if(!st.ended) enter(book,st,win);
+      return;
+    }
+  }
+  if(stamStat&&(st.stats[stamStat]||0)<=0){
+    var lose=cb.def.lose; st.combat=null;
+    if(lose){log(st,'You fall, beaten…','combat');enter(book,st,lose);}
+    else {st.ended={kind:'death',msg:'Slain in combat.'};log(st,'You have been slain.','end');}
+  }
+}
+function combatCanEscape(st){
+  var cb=st.combat; if(!cb) return false;
+  var esc=cb.def.escape; if(!esc||!esc.target) return false;
+  return cb.round>(+esc.minRound||0);
+}
+function combatEscape(book,st){
+  if(!combatCanEscape(st)||st.ended) return;
+  st.fxFrom=st.log.length;
+  var cb=st.combat;
+  var dmg=combatDamage(book,cb);
+  var stamStat=book.settings.staminaStat;
+  if(stamStat){st.stats[stamStat]=clampStat(book,stamStat,(st.stats[stamStat]||0)-dmg);}
+  log(st,'You flee, taking '+dmg+' damage as you go.','combat');
+  var t=cb.def.escape.target;
+  st.combat=null;
+  checkDeath(book,st);
+  if(!st.ended) enter(book,st,t);
+}
+return {parseDice:parseDice,diceText:diceText,rollSpec:rollSpec,newState:newState,visibleChoices:visibleChoices,
+  choiceAccess:choiceAccess,choose:choose,enter:enter,combatRound:combatRound,combatEscape:combatEscape,
+  combatCanEscape:combatCanEscape,section:section,statDef:statDef,itemDef:itemDef,flagDef:flagDef,
+  reqMet:reqMet,clampStat:clampStat,rand01:rand01};
+})();
+</script>
+
+<script>
+'use strict';
+/* ============================= HELPERS ============================= */
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+function el(tag,attrs,...kids){
+  const n=document.createElement(tag);
+  if(attrs) for(const [k,v] of Object.entries(attrs)){
+    if(v==null||v===false) continue;
+    if(k==='class') n.className=v;
+    else if(k==='html') n.innerHTML=v;
+    else if(k.startsWith('on')) n.addEventListener(k.slice(2),v);
+    else if(k==='value') n.value=v;
+    else if(k==='checked') n.checked=!!v;
+    else if(k==='disabled') n.disabled=!!v;
+    else if(k==='selected') n.selected=!!v;
+    else n.setAttribute(k,v===true?'':v);
+  }
+  for(const k of kids.flat(9)){ if(k==null||k===false) continue; n.append(k.nodeType?k:String(k)); }
+  return n;
+}
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function debounce(fn,ms){let t;const f=(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};f.now=(...a)=>{clearTimeout(t);fn(...a);};return f;}
+function slugify(s){return String(s).toLowerCase().trim().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'x';}
+function wordsOf(t){const s=String(t||'').trim();return s?s.split(/\s+/).length:0;}
+function fmtTime(ts){const d=new Date(ts);return d.toLocaleString(undefined,{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+function toast(msg,kind){
+  const t=el('div',{class:'toast'+(kind==='err'?' err':'')},msg);
+  $('#toasts').append(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .4s';setTimeout(()=>t.remove(),450);},kind==='err'?4200:2400);
+}
+/* Modal system */
+function showModal(node){const w=$('#modalWrap');w.innerHTML='';w.append(node);w.classList.remove('hidden');
+  const f=node.querySelector('input,select,textarea,button');if(f)setTimeout(()=>f.focus(),30);}
+function closeModal(){const w=$('#modalWrap');w.classList.add('hidden');w.innerHTML='';}
+function confirmDlg(msg,{danger,okText}={}){
+  return new Promise(res=>{
+    const ok=el('button',{class:danger?'danger':'primary',onclick:()=>{closeModal();res(true);}},okText||'OK');
+    const m=el('div',{class:'modal'},
+      el('div',{style:'font-size:15px;white-space:pre-wrap'},msg),
+      el('div',{class:'mbtns'},el('button',{onclick:()=>{closeModal();res(false);}},'Cancel'),ok));
+    showModal(m); ok.focus();
+  });
+}
+function promptDlg(msg,def){
+  return new Promise(res=>{
+    const inp=el('input',{type:'text',value:def||'',style:'width:100%'});
+    const done=v=>{closeModal();res(v);};
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter')done(inp.value);if(e.key==='Escape')done(null);});
+    showModal(el('div',{class:'modal'},
+      el('div',{style:'margin-bottom:10px'},msg),inp,
+      el('div',{class:'mbtns'},
+        el('button',{onclick:()=>done(null)},'Cancel'),
+        el('button',{class:'primary',onclick:()=>done(inp.value)},'OK'))));
+    setTimeout(()=>{inp.focus();inp.select();},30);
+  });
+}
+/* IndexedDB key-value store (autosave, backups, last file handle) */
+const store={db:null,ok:false,
+  init(){return new Promise(res=>{try{
+    const r=indexedDB.open('gamebook-studio',1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('kv');
+    r.onsuccess=()=>{store.db=r.result;store.ok=true;res();};
+    r.onerror=()=>res();
+  }catch(e){res();}});},
+  get(k){return new Promise(res=>{if(!store.ok)return res(undefined);try{
+    const t=store.db.transaction('kv').objectStore('kv').get(k);
+    t.onsuccess=()=>res(t.result);t.onerror=()=>res(undefined);}catch(e){res(undefined);}});},
+  set(k,v){return new Promise(res=>{if(!store.ok)return res();try{
+    const t=store.db.transaction('kv','readwrite').objectStore('kv').put(v,k);
+    t.onsuccess=()=>res();t.onerror=()=>res();}catch(e){res();}});},
+  del(k){return new Promise(res=>{if(!store.ok)return res();try{
+    const t=store.db.transaction('kv','readwrite').objectStore('kv').delete(k);
+    t.onsuccess=()=>res();t.onerror=()=>res();}catch(e){res();}});}
+};
+/* ============================= APP STATE ============================= */
+const STATUSES=['todo','draft','review','done'];
+const App={
+  book:null, fileName:null, fileHandle:null, dirty:false,
+  mode:'write', cur:null, navBack:[], navFwd:[],
+  undoStack:[], redoStack:[],
+  issues:[], issueBySec:{}, backlinks:{},
+  play:{state:null,history:[],seed:1},
+  sheet:{sort:'number',dir:1,q:''},
+  graph:{x:40,y:40,k:1,pos:{},edges:[],built:false,everBuilt:false,sideOpen:true,linkDrag:null},
+  sbQ:''
+};
+/* ============================= BOOK MODEL ============================= */
+function blankBook(title){
+  return {format:'gamebook-studio',version:1,
+    meta:{title:title||'Untitled Gamebook',author:'',notes:''},
+    settings:{start:null,damage:2,skillStat:null,staminaStat:null,appendTurnTo:true,includeTitles:false},
+    stats:[],items:[],flags:[],sections:[],counters:{id:1}};
+}
+function starterBook(){
+  const b=blankBook('Untitled Gamebook');
+  const s={id:'s1',number:1,title:'The beginning',text:'Your adventure starts here.\n\nPress Alt+N (or the + button) to add sections, add choices below, then test your book in Play mode.',
+    tags:[],status:'draft',lockNumber:true,onEnter:[],choices:[],combat:null,ending:null,notes:''};
+  b.sections.push(s); b.settings.start='s1'; b.counters.id=2;
+  return b;
+}
+function S(id){return App.book?App.book.sections.find(s=>s.id===id)||null:null;}
+function byNumber(n){return App.book.sections.find(s=>s.number===n)||null;}
+function sortedSections(){return [...App.book.sections].sort((a,b)=>(a.number||0)-(b.number||0));}
+function nextFreeNumber(){let m=0;for(const s of App.book.sections)if(s.number>m)m=s.number;return m+1;}
+function uid(){
+  const b=App.book; b.counters=b.counters||{id:1};
+  let id; do{id='s'+(b.counters.id++).toString(36);}while(S(id));
+  return id;
+}
+function newSectionObj(){
+  return {id:uid(),number:nextFreeNumber(),title:'',text:'',tags:[],status:'todo',
+    lockNumber:false,onEnter:[],choices:[],combat:null,ending:null,notes:''};
+}
+function newChoiceObj(){return {id:'c'+Math.random().toString(36).slice(2,8),text:'',kind:'normal',target:null,requires:[],effects:[],hideIfUnmet:false,check:null};}
+function normalizeBook(b){
+  if(!b||typeof b!=='object'||b.format!=='gamebook-studio'||!Array.isArray(b.sections))
+    throw new Error('Not a Gamebook Studio project file.');
+  b.meta=Object.assign({title:'Untitled',author:'',notes:''},b.meta);
+  b.settings=Object.assign({start:null,damage:2,skillStat:null,staminaStat:null,appendTurnTo:true,includeTitles:false},b.settings);
+  b.stats=b.stats||[]; b.items=b.items||[]; b.flags=b.flags||[];
+  b.counters=b.counters||{id:1};
+  let maxCounter=b.counters.id||1;
+  for(const s of b.sections){
+    s.title=s.title||''; s.text=s.text||''; s.tags=s.tags||[]; s.status=STATUSES.includes(s.status)?s.status:'draft';
+    s.onEnter=s.onEnter||[]; s.choices=s.choices||[]; s.notes=s.notes||'';
+    s.lockNumber=!!s.lockNumber; s.combat=s.combat||null; s.ending=s.ending||null;
+    if(s.gpos&&isFinite(+s.gpos.x)&&isFinite(+s.gpos.y))s.gpos={x:+s.gpos.x,y:+s.gpos.y};else delete s.gpos;
+    if(typeof s.number!=='number') s.number=0;
+    for(const c of s.choices){c.requires=c.requires||[];c.effects=c.effects||[];c.kind=c.kind||'normal';}
+  }
+  b.counters.id=Math.max(maxCounter,b.sections.length+1);
+  return b;
+}
+function serialize(){return JSON.stringify(App.book,null,1);}
+/* ============================= DIRTY / AUTOSAVE / UNDO ============================= */
+const scheduleAutosave=debounce(async()=>{
+  if(!App.book)return;
+  await store.set('autosave',{time:Date.now(),json:serialize(),dirty:App.dirty,fileName:App.fileName});
+},1200);
+const scheduleValidate=debounce(()=>{rebuildDerived();refreshIssueUI();},350);
+const scheduleSidebar=debounce(()=>{if(App.mode==='write')renderSidebar();},250);
+function touch(){
+  App.dirty=true;
+  App.graph.built=false;
+  updateSaveStateUI();
+  scheduleAutosave();
+  scheduleValidate();
+  if(App.mode==='graph')scheduleGraphDraw();
+}
+function updateSaveStateUI(){
+  const e=$('#saveState');
+  e.textContent=App.dirty?'Unsaved changes':'Saved';
+  e.classList.toggle('dirty',App.dirty);
+  $('#saveBtn').textContent=App.dirty?'Save ●':'Save';
+  $('#bookTitle').textContent=App.book?App.book.meta.title:'—';
+  document.title=(App.dirty?'● ':'')+(App.book?App.book.meta.title:'Gamebook Studio')+' — Gamebook Studio';
+}
+function snapshot(label){
+  App.undoStack.push({label,json:serialize(),cur:App.cur});
+  if(App.undoStack.length>25)App.undoStack.shift();
+  App.redoStack=[];
+}
+function undo(){
+  if(!App.undoStack.length){toast('Nothing to undo');return;}
+  const u=App.undoStack.pop();
+  App.redoStack.push({label:u.label,json:serialize(),cur:App.cur});
+  App.book=normalizeBook(JSON.parse(u.json));
+  App.cur=S(u.cur)?u.cur:(App.book.sections[0]?App.book.sections[0].id:null);
+  touch(); rebuildDerived(); renderAll();
+  toast('Undid: '+u.label);
+}
+function redo(){
+  if(!App.redoStack.length){toast('Nothing to redo');return;}
+  const u=App.redoStack.pop();
+  App.undoStack.push({label:u.label,json:serialize(),cur:App.cur});
+  App.book=normalizeBook(JSON.parse(u.json));
+  App.cur=S(u.cur)?u.cur:(App.book.sections[0]?App.book.sections[0].id:null);
+  touch(); rebuildDerived(); renderAll();
+  toast('Redid: '+u.label);
+}
+/* ============================= STRUCTURE OPS ============================= */
+function addSection(opts={}){
+  snapshot('add section');
+  const s=newSectionObj();
+  if(opts.title)s.title=opts.title;
+  if(opts.number)s.number=opts.number;
+  App.book.sections.push(s);
+  if(!App.book.settings.start)App.book.settings.start=s.id;
+  touch(); rebuildDerived();
+  if(!opts.silent){openSection(s.id);renderSidebar();if(App.mode==='sheet')renderSheet();}
+  return s;
+}
+async function deleteSection(id){
+  const sec=S(id); if(!sec)return;
+  const bl=(App.backlinks[id]||[]).length;
+  const ok=await confirmDlg('Delete section '+sec.number+(sec.title?' “'+sec.title+'”':'')+'?'+(bl?'\n\n'+bl+' link(s) from other sections will be cleared.':''),{danger:true,okText:'Delete'});
+  if(!ok)return;
+  snapshot('delete section '+sec.number);
+  App.book.sections=App.book.sections.filter(s=>s.id!==id);
+  for(const s of App.book.sections){
+    for(const c of s.choices){
+      if(c.target===id)c.target=null;
+      if(c.check){if(c.check.success===id)c.check.success=null;if(c.check.fail===id)c.check.fail=null;}
+    }
+    if(s.combat){
+      if(s.combat.win===id)s.combat.win=null;
+      if(s.combat.lose===id)s.combat.lose=null;
+      if(s.combat.escape&&s.combat.escape.target===id)s.combat.escape.target=null;
+    }
+  }
+  if(App.book.settings.start===id)App.book.settings.start=App.book.sections[0]?App.book.sections[0].id:null;
+  if(App.cur===id)App.cur=App.book.sections[0]?App.book.sections[0].id:null;
+  touch(); rebuildDerived(); renderAll();
+  toast('Section deleted');
+}
+async function setNumber(sec,n){
+  n=Math.round(+n);
+  if(!isFinite(n)||n<1){toast('Number must be a positive integer','err');renderEditor();return;}
+  if(n===sec.number)return;
+  const other=byNumber(n);
+  if(other&&other.id!==sec.id){
+    const swap=await confirmDlg('Number '+n+' is used by “'+(other.title||'untitled')+'”.\nSwap the two numbers?',{okText:'Swap'});
+    if(!swap){renderEditor();return;}
+    snapshot('swap numbers');
+    other.number=sec.number; sec.number=n;
+  } else {
+    snapshot('renumber section');
+    sec.number=n;
+  }
+  touch(); rebuildDerived(); renderAll();
+}
+function shuffleNumbers(){
+  const secs=App.book.sections.filter(s=>!s.lockNumber);
+  const nums=secs.map(s=>s.number);
+  // Fisher–Yates on the number list
+  for(let i=nums.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[nums[i],nums[j]]=[nums[j],nums[i]];}
+  snapshot('shuffle numbers');
+  secs.forEach((s,i)=>s.number=nums[i]);
+  touch(); rebuildDerived(); renderAll();
+  toast('Numbers shuffled ('+secs.length+' sections; locked sections kept)');
+}
+function compactNumbers(){
+  snapshot('compact numbers');
+  const secs=sortedSections();
+  secs.forEach((s,i)=>s.number=i+1);
+  touch(); rebuildDerived(); renderAll();
+  toast('Numbers compacted to 1–'+secs.length);
+}
+/* ============================= LINKS / VALIDATION ============================= */
+function targetsOf(sec){
+  const out=[];
+  sec.choices.forEach((c,i)=>{
+    if(c.kind==='check'){
+      if(c.check){
+        out.push({id:c.check.success,kind:'check',label:'check success',choice:i});
+        out.push({id:c.check.fail,kind:'check',label:'check failure',choice:i});
+      }
+    } else out.push({id:c.target,kind:'choice',label:c.text||('choice '+(i+1)),choice:i});
+  });
+  if(sec.combat){
+    out.push({id:sec.combat.win,kind:'combat',label:'combat win'});
+    if(sec.combat.lose)out.push({id:sec.combat.lose,kind:'combat',label:'combat lose'});
+    if(sec.combat.escape&&sec.combat.escape.target)out.push({id:sec.combat.escape.target,kind:'combat',label:'combat escape'});
+  }
+  return out;
+}
+function rebuildDerived(){
+  const b=App.book; if(!b){App.issues=[];return;}
+  const issues=[],bySec={},backlinks={};
+  const idSet=new Set(b.sections.map(s=>s.id));
+  const statIds=new Set(b.stats.map(s=>s.id)),itemIds=new Set(b.items.map(s=>s.id)),flagIds=new Set(b.flags.map(s=>s.id));
+  const push=(level,sec,code,msg)=>{const it={level,sec,code,msg};issues.push(it);if(sec){(bySec[sec]=bySec[sec]||[]).push(it);}};
+  const numSeen={};
+  let anyCombat=false;
+  const refCheck=(sec,list,what)=>{
+    for(const r of list||[]){
+      if(r.stat!=null&&r.stat!==''&&!statIds.has(r.stat))push('err',sec.id,'UNDEF','Unknown stat in '+what);
+      if(r.item!=null&&r.item!==''&&!itemIds.has(r.item))push('err',sec.id,'UNDEF','Unknown item in '+what);
+      if(r.flag!=null&&r.flag!==''&&!flagIds.has(r.flag))push('err',sec.id,'UNDEF','Unknown condition in '+what);
+    }
+  };
+  for(const sec of b.sections){
+    if(!sec.number||sec.number<1)push('err',sec.id,'NUM','Missing section number');
+    else{ if(numSeen[sec.number])push('err',sec.id,'DUPNUM','Duplicate number '+sec.number+' (also “'+(numSeen[sec.number].title||'untitled')+'”)'); numSeen[sec.number]=sec; }
+    if(!String(sec.text).trim())push('warn',sec.id,'EMPTY','No body text yet');
+    refCheck(sec,sec.onEnter,'on-arrival effects');
+    sec.choices.forEach((c,i)=>{
+      refCheck(sec,c.requires,'choice '+(i+1)+' requirements');
+      refCheck(sec,c.effects,'choice '+(i+1)+' effects');
+      if(c.kind==='check'){
+        const ck=c.check||{};
+        if(!ck.stat||!statIds.has(ck.stat))push('err',sec.id,'CHECK','Choice '+(i+1)+': dice test needs a stat');
+        if(!Engine.parseDice(ck.dice||'2d6'))push('err',sec.id,'CHECK','Choice '+(i+1)+': invalid dice notation');
+        if(!ck.success)push('err',sec.id,'CHECK','Choice '+(i+1)+': no success target');
+        if(!ck.fail)push('err',sec.id,'CHECK','Choice '+(i+1)+': no failure target');
+      } else if(!c.target)push('err',sec.id,'NOTGT','Choice '+(i+1)+(c.text?' “'+c.text+'”':'')+' has no target');
+    });
+    if(sec.combat){
+      anyCombat=true;
+      if(!sec.combat.enemies||!sec.combat.enemies.length)push('err',sec.id,'COMBAT','Combat has no enemies');
+      if(!sec.combat.win)push('err',sec.id,'COMBAT','Combat has no victory target');
+    }
+    for(const t of targetsOf(sec)){
+      if(!t.id)continue;
+      if(!idSet.has(t.id))push('err',sec.id,'BROKEN','Broken link ('+t.label+')');
+      else (backlinks[t.id]=backlinks[t.id]||[]).push({from:sec.id,label:t.label});
+    }
+    if(!sec.ending&&!sec.combat&&sec.choices.length===0)
+      push('err',sec.id,'DEADEND','Dead end — no choices and not marked as an ending');
+  }
+  if(!b.settings.start||!idSet.has(b.settings.start))push('err',null,'START','No valid start section set (Book settings)');
+  else{
+    const seen=new Set([b.settings.start]),q=[b.settings.start];
+    while(q.length){
+      const sec=S(q.pop()); if(!sec)continue;
+      for(const t of targetsOf(sec))if(t.id&&idSet.has(t.id)&&!seen.has(t.id)){seen.add(t.id);q.push(t.id);}
+    }
+    for(const sec of b.sections)if(!seen.has(sec.id))push('warn',sec.id,'ORPHAN','Unreachable from the start section');
+  }
+  if(anyCombat){
+    if(!b.settings.skillStat||!statIds.has(b.settings.skillStat))push('warn',null,'CFG','Combat exists but no attack stat is set (Book settings)');
+    if(!b.settings.staminaStat||!statIds.has(b.settings.staminaStat))push('warn',null,'CFG','Combat exists but no stamina stat is set (Book settings)');
+  }
+  App.issues=issues; App.issueBySec=bySec; App.backlinks=backlinks;
+}
+function secIssueLevel(id){
+  const list=App.issueBySec[id]; if(!list||!list.length)return null;
+  return list.some(i=>i.level==='err')?'err':'warn';
+}
+function refreshIssueUI(){
+  const errs=App.issues.filter(i=>i.level==='err').length;
+  const warns=App.issues.filter(i=>i.level==='warn').length;
+  const b=$('#issuesBadge');
+  if(errs){b.textContent=errs+' error'+(errs>1?'s':'')+(warns?' · '+warns:'');b.className='err';}
+  else if(warns){b.textContent=warns+' warning'+(warns>1?'s':'');b.className='warn';}
+  else{b.textContent='✓ valid';b.className='ok';}
+  if(App.mode==='write')scheduleSidebar();
+}
+/* ============================= NAVIGATION ============================= */
+function openSection(id,opts={}){
+  if(!S(id))return;
+  if(App.cur&&App.cur!==id&&opts.push!==false){App.navBack.push(App.cur);if(App.navBack.length>100)App.navBack.shift();App.navFwd=[];}
+  App.cur=id;
+  if(App.mode!=='write')setMode('write');
+  else{renderEditor();renderSidebar();}
+  if(opts.focusText){const t=$('#edText');if(t){t.focus();}}
+}
+function goBack(){if(!App.navBack.length)return;App.navFwd.push(App.cur);App.cur=App.navBack.pop();if(App.mode!=='write')setMode('write');else{renderEditor();renderSidebar();}}
+function goFwd(){if(!App.navFwd.length)return;App.navBack.push(App.cur);App.cur=App.navFwd.pop();if(App.mode!=='write')setMode('write');else{renderEditor();renderSidebar();}}
+function setMode(m){
+  App.mode=m;
+  $$('#modeTabs button').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
+  $$('.view').forEach(v=>v.classList.remove('active'));
+  $('#view-'+m).classList.add('active');
+  $('#psToggle').classList.toggle('hidden',m!=='play');
+  $('#view-write').classList.remove('sb-open');
+  if(m==='write'){renderSidebar();renderEditor();}
+  else if(m==='sheet')renderSheet();
+  else if(m==='graph'){
+    const first=!App.graph.everBuilt;
+    buildGraph();
+    if(first)graphFit();else drawGraph();
+    renderGraphSide();
+  }
+  else if(m==='play'){if(!App.play.state)playRestart(false);renderPlay();}
+}
+/* ============================= BOOK LOAD ============================= */
+function loadBook(b,opts={}){
+  App.book=normalizeBook(b);
+  App.fileName=opts.fileName||null;
+  App.fileHandle=opts.fileHandle||null;
+  App.dirty=!!opts.dirty;
+  App.cur=App.book.settings.start&&S(App.book.settings.start)?App.book.settings.start:(App.book.sections[0]?App.book.sections[0].id:null);
+  App.navBack=[];App.navFwd=[];App.undoStack=[];App.redoStack=[];
+  App.play={state:null,history:[],seed:(Math.random()*0xffffffff)>>>0};
+  App.graph={x:40,y:40,k:1,pos:{},edges:[],built:false,everBuilt:false,sideOpen:true,linkDrag:null};
+  rebuildDerived(); refreshIssueUI(); updateSaveStateUI();
+  setMode('write');
+  scheduleAutosave();
+}
+/* ============================= RENDER: GLOBAL ============================= */
+function renderAll(){
+  updateSaveStateUI(); refreshIssueUI();
+  if(App.mode==='write'){renderSidebar();renderEditor();}
+  else if(App.mode==='sheet')renderSheet();
+  else if(App.mode==='graph'){App.graph.built=false;buildGraph();drawGraph();renderGraphSide();}
+  else if(App.mode==='play')renderPlay();
+}
+function firstWords(t){const s=String(t||'').trim().split(/\s+/).slice(0,7).join(' ');return s?s.slice(0,44):'';}
+function secLabel(s){return s.number+' — '+(s.title||firstWords(s.text)||'untitled');}
+/* ============================= SIDEBAR ============================= */
+function matchesFilter(sec,q){
+  if(!q||!q.trim())return true;
+  for(const part of q.trim().toLowerCase().split(/\s+/)){
+    if(part.startsWith('#')){if(!sec.tags.some(t=>t.toLowerCase().includes(part.slice(1))))return false;}
+    else if(part.startsWith('is:')){if(sec.status!==part.slice(3))return false;}
+    else if(!((sec.number+' '+sec.title+' '+sec.text).toLowerCase().includes(part)))return false;
+  }
+  return true;
+}
+function renderSidebar(){
+  const list=$('#sectionList');if(!list)return;
+  list.innerHTML='';
+  const secs=sortedSections().filter(s=>matchesFilter(s,App.sbQ));
+  const frag=document.createDocumentFragment();
+  for(const s of secs){
+    const lev=secIssueLevel(s.id);
+    frag.append(el('div',{class:'slitem'+(s.id===App.cur?' sel':''),onclick:()=>openSection(s.id)},
+      el('span',{class:'num'},s.number),
+      el('span',{class:'dot '+s.status,title:s.status}),
+      el('span',{class:'ttl'+(s.title?'':' untitled')},s.title||firstWords(s.text)||'(empty)'),
+      s.id===App.book.settings.start?el('span',{class:'faint',title:'Start section',style:'font-size:10px'},'▶'):null,
+      lev?el('span',{class:'issuedot '+lev,title:'Has '+(lev==='err'?'errors':'warnings')}):null
+    ));
+  }
+  list.append(frag);
+  $('#sbCount').textContent=secs.length===App.book.sections.length
+    ? App.book.sections.length+' section'+(App.book.sections.length===1?'':'s')
+    : secs.length+' of '+App.book.sections.length+' sections';
+  const sel=list.querySelector('.slitem.sel');if(sel)sel.scrollIntoView({block:'nearest'});
+}
+/* ============================= DEFINITION HELPERS ============================= */
+function uniqueDefId(arr,base){let id=base,i=2;while(arr.some(d=>d.id===id))id=base+'_'+(i++);return id;}
+function createItemDef(name){const d={id:uniqueDefId(App.book.items,slugify(name)),name:name.trim(),startWith:false};App.book.items.push(d);touch();return d;}
+function createFlagDef(name){const d={id:uniqueDefId(App.book.flags,slugify(name)),name:name.trim()};App.book.flags.push(d);touch();return d;}
+function createStatDef(name){const d={id:uniqueDefId(App.book.stats,slugify(name)),name:name.trim(),initial:'0',min:'',max:''};App.book.stats.push(d);touch();return d;}
+function defSelect(arr,value,onPick,kindLabel,createFn){
+  const sel=el('select',{onchange:async()=>{
+    if(sel.value==='__new__'){
+      const name=await promptDlg('Name for the new '+kindLabel+':');
+      if(name&&name.trim()){const d=createFn(name);onPick(d.id);}
+      renderEditor();
+    } else {onPick(sel.value);touch();scheduleValidate();}
+  }},
+    el('option',{value:'',disabled:true,selected:!value},'— '+kindLabel+' —'),
+    arr.map(d=>el('option',{value:d.id,selected:d.id===value},d.name)),
+    el('option',{value:'__new__'},'+ new '+kindLabel+'…'));
+  return sel;
+}
+/* ============================= TARGET PICKER ============================= */
+function targetPicker(get,set,opts={}){
+  const wrap=el('div',{class:'tpick',style:opts.width?('width:'+opts.width):''});
+  const inp=el('input',{type:'text',placeholder:opts.placeholder||'target section…',autocomplete:'off',spellcheck:'false'});
+  let dd=null,hl=0,items=[];
+  function show(){
+    const t=get();const s=t?S(t):null;
+    inp.value=s?(s.number+' — '+(s.title||firstWords(s.text)||'untitled')):'';
+    inp.classList.toggle('empty',!s&&!opts.optional);
+  }
+  function close(){if(dd){dd.remove();dd=null;}}
+  function buildItems(q){
+    q=q.trim().toLowerCase();
+    const res=[];
+    const secs=sortedSections();
+    if(!q){for(const s of secs){res.push({id:s.id,s});if(res.length>=14)break;}}
+    else{
+      const isNum=/^\d+$/.test(q);
+      for(const s of secs){
+        if(isNum?String(s.number).startsWith(q):(s.title.toLowerCase().includes(q)||firstWords(s.text).toLowerCase().includes(q)))
+          res.push({id:s.id,s});
+        if(res.length>=14)break;
+      }
+      const exact=isNum?byNumber(parseInt(q,10)):null;
+      if(exact&&!res.some(r=>r.id===exact.id))res.unshift({id:exact.id,s:exact});
+      if(!(isNum&&exact))res.push({create:true,q:inp.value.trim()});
+    }
+    return res;
+  }
+  function openDD(q){
+    close();
+    items=buildItems(q);hl=0;
+    if(!items.length)return;
+    dd=el('div',{class:'ddrop'},items.map((it,i)=>{
+      const node=it.create
+        ? el('div',{class:'ddi create'},'+ create “'+it.q+'”')
+        : el('div',{class:'ddi'},el('span',{class:'num'},it.s.number),el('span',null,it.s.title||firstWords(it.s.text)||'untitled'));
+      node.addEventListener('mousedown',e=>{e.preventDefault();pick(it);});
+      node.addEventListener('mouseenter',()=>{hl=i;paintHl();});
+      return node;
+    }));
+    wrap.append(dd);paintHl();
+  }
+  function paintHl(){if(!dd)return;[...dd.children].forEach((c,i)=>c.classList.toggle('hl',i===hl));const c=dd.children[hl];if(c)c.scrollIntoView({block:'nearest'});}
+  function pick(it){
+    if(it.create){
+      const q=it.q;const num=/^\d+$/.test(q)?parseInt(q,10):null;
+      const s=addSection({silent:true,title:num?'':q,number:(num&&!byNumber(num))?num:undefined});
+      set(s.id);renderSidebar();
+    } else set(it.id);
+    touch();scheduleValidate();close();show();
+    if(opts.onPicked)opts.onPicked();
+  }
+  inp.addEventListener('focus',()=>{inp.select();openDD('');});
+  inp.addEventListener('input',()=>openDD(inp.value));
+  inp.addEventListener('blur',()=>setTimeout(()=>{close();show();},140));
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'){e.preventDefault();if(dd){hl=Math.min(hl+1,items.length-1);paintHl();}else openDD(inp.value);}
+    else if(e.key==='ArrowUp'){e.preventDefault();hl=Math.max(hl-1,0);paintHl();}
+    else if(e.key==='Enter'){e.preventDefault();if(items[hl])pick(items[hl]);}
+    else if(e.key==='Escape'){close();show();inp.blur();e.stopPropagation();}
+  });
+  show();
+  wrap.append(inp);
+  return wrap;
+}
+function gotoBtn(get){return el('button',{class:'iconbtn ghost',title:'Open target section',onclick:()=>{const t=get();if(t&&S(t))openSection(t);}},'→');}
+/* ============================= RULE ROW EDITORS ============================= */
+const REQ_TYPES=[['hasItem','has item'],['noItem','lacks item'],['flagSet','condition set'],['flagClear','condition not set'],['statCmp','stat compare']];
+const FX_TYPES=[['addItem','gain item'],['removeItem','lose item'],['setFlag','set condition'],['clearFlag','clear condition'],['statAdd','stat +/−'],['statSet','stat ='],['statRoll','roll dice → stat']];
+function ruleTypeSel(types,row,after){
+  return el('select',{onchange:function(){row.t=this.value;touch();after();}},
+    types.map(([v,t])=>el('option',{value:v,selected:row.t===v},t)));
+}
+function reqRowEl(row,list,rerender){
+  const b=App.book;
+  const bits=[ruleTypeSel(REQ_TYPES,row,rerender)];
+  if(row.t==='hasItem'||row.t==='noItem')bits.push(defSelect(b.items,row.item,v=>{row.item=v;},'item',createItemDef));
+  else if(row.t==='flagSet'||row.t==='flagClear')bits.push(defSelect(b.flags,row.flag,v=>{row.flag=v;},'condition',createFlagDef));
+  else if(row.t==='statCmp')bits.push(
+    defSelect(b.stats,row.stat,v=>{row.stat=v;},'stat',createStatDef),
+    el('select',{onchange:function(){row.op=this.value;touch();}},['>=','<=','>','<','=','!='].map(o=>el('option',{value:o,selected:(row.op||'>=')===o},o))),
+    el('input',{type:'number',value:row.value??0,onchange:function(){row.value=+this.value||0;touch();}}));
+  bits.push(el('button',{class:'x',title:'Remove',onclick:()=>{list.splice(list.indexOf(row),1);touch();scheduleValidate();rerender();}},'×'));
+  return el('span',{class:'rulerow'},bits);
+}
+function fxRowEl(row,list,rerender){
+  const b=App.book;
+  const bits=[ruleTypeSel(FX_TYPES,row,rerender)];
+  if(row.t==='addItem'||row.t==='removeItem')bits.push(defSelect(b.items,row.item,v=>{row.item=v;},'item',createItemDef));
+  else if(row.t==='setFlag'||row.t==='clearFlag')bits.push(defSelect(b.flags,row.flag,v=>{row.flag=v;},'condition',createFlagDef));
+  else if(row.t==='statAdd')bits.push(
+    defSelect(b.stats,row.stat,v=>{row.stat=v;},'stat',createStatDef),
+    el('input',{type:'number',value:row.amount??1,title:'Amount (negative to subtract)',onchange:function(){row.amount=+this.value||0;touch();}}));
+  else if(row.t==='statSet')bits.push(
+    defSelect(b.stats,row.stat,v=>{row.stat=v;},'stat',createStatDef),
+    el('span',{class:'small dim'},'='),
+    el('input',{type:'number',value:row.value??0,onchange:function(){row.value=+this.value||0;touch();}}));
+  else if(row.t==='statRoll')bits.push(
+    el('input',{type:'text',value:row.dice||'1d6',style:'width:64px',title:'Dice, e.g. 2d6+1',onchange:function(){row.dice=this.value;touch();scheduleValidate();}}),
+    el('span',{class:'small dim'},'→'),
+    defSelect(b.stats,row.stat,v=>{row.stat=v;},'stat',createStatDef));
+  bits.push(el('button',{class:'x',title:'Remove',onclick:()=>{list.splice(list.indexOf(row),1);touch();scheduleValidate();rerender();}},'×'));
+  return el('span',{class:'rulerow'},bits);
+}
+function rulesBlock(label,list,mkRow,addRow,rerender){
+  const line=el('div',{class:'rulesline'},
+    el('span',{class:'small dim',style:'min-width:86px'},label),
+    list.map(r=>mkRow(r,list,rerender)),
+    el('button',{class:'addrule',onclick:()=>{list.push(addRow());touch();rerender();}},'+'));
+  return line;
+}
+function defaultReq(){return {t:'hasItem',item:App.book.items[0]?App.book.items[0].id:''};}
+function defaultFx(){return {t:'addItem',item:App.book.items[0]?App.book.items[0].id:''};}
+/* ============================= EDITOR ============================= */
+function renderEditor(focusSel){
+  const wrap=$('#editorWrap'),ed=$('#editor');if(!ed)return;
+  const scroll=wrap.scrollTop;
+  ed.innerHTML='';
+  const sec=S(App.cur);
+  if(!sec){
+    ed.append(el('div',{class:'dim',style:'padding:60px 20px;text-align:center'},
+      'No sections yet. Press ',el('span',{class:'kbd'},'Alt+N'),' or the + button to create one.'));
+    return;
+  }
+  const b=App.book;
+  /* header */
+  const numIn=el('input',{id:'edNumber',type:'number',min:'1',value:sec.number,title:'Section number',onchange:()=>setNumber(sec,numIn.value)});
+  const titleIn=el('input',{id:'edTitle',type:'text',placeholder:'Section title (optional)',value:sec.title,
+    oninput:()=>{sec.title=titleIn.value;touch();scheduleSidebar();}});
+  ed.append(el('div',{class:'edhead'},
+    el('button',{class:'iconbtn ghost',title:'Back (Alt+←)',disabled:!App.navBack.length,onclick:goBack},'←'),
+    el('button',{class:'iconbtn ghost',title:'Forward (Alt+→)',disabled:!App.navFwd.length,onclick:goFwd},'→'),
+    numIn,titleIn,
+    el('button',{class:'iconbtn ghost danger',title:'Delete section',onclick:()=>deleteSection(sec.id)},'✕')));
+  /* meta row */
+  const statusSel=el('select',{title:'Writing status',onchange:()=>{sec.status=statusSel.value;touch();scheduleSidebar();}},
+    STATUSES.map(s=>el('option',{value:s,selected:s===sec.status},s)));
+  const tagsIn=el('input',{type:'text',placeholder:'tags, comma separated',value:sec.tags.join(', '),style:'width:200px',
+    onchange:()=>{sec.tags=tagsIn.value.split(',').map(t=>t.trim()).filter(Boolean);touch();}});
+  const endSel=el('select',{title:'Mark as an ending',onchange:()=>{sec.ending=endSel.value?{kind:endSel.value}:null;touch();rebuildDerived();refreshIssueUI();renderEditor();}},
+    [['','not an ending'],['victory','ending · victory'],['death','ending · death'],['end','ending · neutral']]
+      .map(([v,t])=>el('option',{value:v,selected:(sec.ending?(sec.ending.kind||'end'):'')===v},t)));
+  ed.append(el('div',{class:'edmeta'},
+    statusSel,tagsIn,endSel,
+    el('label',{class:'row small dim',title:'The book starts at this section'},
+      el('input',{type:'checkbox',checked:b.settings.start===sec.id,onchange:function(){
+        b.settings.start=this.checked?sec.id:(b.settings.start===sec.id?null:b.settings.start);
+        touch();rebuildDerived();refreshIssueUI();renderSidebar();}}),'start'),
+    el('label',{class:'row small dim',title:'Keep this number when shuffling'},
+      el('input',{type:'checkbox',checked:sec.lockNumber,onchange:function(){sec.lockNumber=this.checked;touch();}}),'lock №'),
+    el('span',{class:'spacer'}),
+    el('span',{id:'edWords',class:'small faint'},wordsOf(sec.text)+' words')));
+  /* body text */
+  const txt=el('textarea',{id:'edText',placeholder:'Write the section text…  (plain text; *italic* and **bold** are rendered in Play/export)',spellcheck:'true'});
+  txt.value=sec.text;
+  const grow=()=>{txt.style.height='auto';txt.style.height=Math.max(200,txt.scrollHeight+4)+'px';};
+  txt.addEventListener('input',()=>{sec.text=txt.value;touch();$('#edWords').textContent=wordsOf(sec.text)+' words';grow();});
+  ed.append(txt);requestAnimationFrame(grow);
+  /* on-arrival effects */
+  ed.append(el('div',{class:'seclabel'},'When the reader arrives'));
+  ed.append(rulesBlock('effects:',sec.onEnter,fxRowEl,defaultFx,()=>renderEditor()));
+  /* choices */
+  ed.append(el('div',{class:'seclabel'},'Choices',el('span',{class:'spacer'}),
+    el('button',{class:'addrule',onclick:()=>{sec.choices.push(newChoiceObj());touch();scheduleValidate();renderEditor('.choice:last-of-type .chtext');}},'+ add choice (Alt+C)')));
+  const chWrap=el('div');
+  sec.choices.forEach((c,i)=>chWrap.append(choiceRowEl(sec,c,i)));
+  if(!sec.choices.length&&!sec.ending&&!sec.combat)
+    chWrap.append(el('div',{class:'small dim',style:'padding:4px 2px'},'No choices yet — a section needs choices, a combat, or an ending.'));
+  ed.append(chWrap);
+  /* combat */
+  ed.append(el('div',{class:'seclabel'},'Combat encounter'));
+  ed.append(combatEditorEl(sec));
+  /* notes */
+  const notes=el('textarea',{placeholder:'Private author notes (never exported)…',style:'width:100%;min-height:48px;font-size:13px'},'');
+  notes.value=sec.notes||'';
+  notes.addEventListener('input',()=>{sec.notes=notes.value;touch();});
+  ed.append(el('details',{style:'margin-top:16px'},el('summary',{class:'small dim',style:'cursor:pointer'},'Author notes'+(sec.notes?' ·':'')),notes));
+  /* backlinks */
+  const bl=App.backlinks[sec.id]||[];
+  ed.append(el('div',{class:'seclabel'},'Linked from'));
+  ed.append(bl.length
+    ? el('div',null,bl.map(x=>{const s=S(x.from);return s?el('span',{class:'linkchip',title:x.label,onclick:()=>openSection(s.id)},el('b',null,s.number),s.title||firstWords(s.text)||'untitled'):null;}))
+    : el('div',{class:'small faint'},b.settings.start===sec.id?'This is the start section.':'Nothing links here yet.'));
+  /* per-section issues */
+  const iss=App.issueBySec[sec.id]||[];
+  if(iss.length){
+    ed.append(el('div',{class:'seclabel'},'Issues'));
+    ed.append(el('div',null,iss.map(i=>el('div',{class:'isline'},
+      el('span',{class:'tag '+i.level},i.level==='err'?'error':'warn'),el('span',null,i.msg)))));
+  }
+  wrap.scrollTop=scroll;
+  if(focusSel){const f=ed.querySelector(focusSel);if(f){f.focus();}}
+}
+function choiceRowEl(sec,c,i){
+  const broken=(c.kind==='check')
+    ? !(c.check&&c.check.success&&c.check.fail&&S(c.check.success)&&S(c.check.fail))
+    : !(c.target&&S(c.target));
+  const box=el('div',{class:'choice'+(broken?' broken':'')});
+  const textIn=el('input',{class:'chtext',type:'text',placeholder:'Choice text, e.g. “Open the iron door”',value:c.text,
+    oninput:()=>{c.text=textIn.value;touch();}});
+  textIn.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();const t=box.querySelector('.tpick input');if(t)t.focus();}
+  });
+  const kindSel=el('select',{title:'Choice type',onchange:()=>{
+    c.kind=kindSel.value;
+    if(c.kind==='check'&&!c.check)c.check={dice:'2d6',stat:App.book.stats[0]?App.book.stats[0].id:'',op:'<=',success:null,fail:null};
+    touch();scheduleValidate();renderEditor();
+  }},
+    el('option',{value:'normal',selected:c.kind!=='check'},'go to'),
+    el('option',{value:'check',selected:c.kind==='check'},'dice test'));
+  const main=el('div',{class:'chmain'},
+    el('span',{class:'num dim',style:'font:12px var(--mono);min-width:16px'},String(i+1)),
+    textIn,kindSel);
+  if(c.kind!=='check'){
+    main.append(targetPicker(()=>c.target,v=>{c.target=v;},{placeholder:'turn to…'}),gotoBtn(()=>c.target));
+  }
+  main.append(
+    el('button',{class:'iconbtn ghost',title:'Move up',disabled:i===0,onclick:()=>{const a=sec.choices;[a[i-1],a[i]]=[a[i],a[i-1]];touch();renderEditor();}},'↑'),
+    el('button',{class:'iconbtn ghost',title:'Move down',disabled:i===sec.choices.length-1,onclick:()=>{const a=sec.choices;[a[i+1],a[i]]=[a[i],a[i+1]];touch();renderEditor();}},'↓'),
+    el('button',{class:'iconbtn ghost',title:'Delete choice',onclick:async()=>{
+      if(c.text||c.target){const ok=await confirmDlg('Delete this choice?',{danger:true,okText:'Delete'});if(!ok)return;}
+      sec.choices.splice(i,1);touch();scheduleValidate();renderEditor();}},'×'));
+  box.append(main);
+  const sub=el('div',{class:'chsub'});
+  if(c.kind==='check'){
+    const ck=c.check=c.check||{dice:'2d6',stat:'',op:'<=',success:null,fail:null};
+    sub.append(el('div',{class:'checkbox-line'},
+      el('span',{class:'small dim'},'roll'),
+      el('input',{type:'text',value:ck.dice||'2d6',style:'width:60px',onchange:function(){ck.dice=this.value;touch();scheduleValidate();}}),
+      el('select',{onchange:function(){ck.op=this.value;touch();}},['<=','<','>=','>','=','!='].map(o=>el('option',{value:o,selected:(ck.op||'<=')===o},o))),
+      defSelect(App.book.stats,ck.stat,v=>{ck.stat=v;},'stat',createStatDef),
+      el('span',{class:'small dim'},' success →'),
+      targetPicker(()=>ck.success,v=>{ck.success=v;},{placeholder:'success…',width:'150px'}),gotoBtn(()=>ck.success),
+      el('span',{class:'small dim'},'failure →'),
+      targetPicker(()=>ck.fail,v=>{ck.fail=v;},{placeholder:'failure…',width:'150px'}),gotoBtn(()=>ck.fail)));
+  }
+  sub.append(rulesBlock('requires:',c.requires,reqRowEl,defaultReq,()=>renderEditor()));
+  sub.append(rulesBlock('effects:',c.effects,fxRowEl,defaultFx,()=>renderEditor()));
+  if(c.requires.length)
+    sub.append(el('label',{class:'row small dim'},
+      el('input',{type:'checkbox',checked:c.hideIfUnmet,onchange:function(){c.hideIfUnmet=this.checked;touch();}}),
+      'hide this choice when requirements are not met (otherwise shown greyed out)'));
+  box.append(sub);
+  return box;
+}
+function combatEditorEl(sec){
+  if(!sec.combat)
+    return el('button',{class:'addrule',onclick:()=>{
+      snapshot('add combat');
+      sec.combat={enemies:[{name:'Enemy',skill:6,stamina:6}],win:null,lose:null,escape:null,damage:''};
+      touch();scheduleValidate();renderEditor();
+    }},'+ add combat encounter');
+  const c=sec.combat;
+  const box=el('div',{class:'combatbox'});
+  c.enemies.forEach((e,i)=>{
+    box.append(el('div',{class:'enemyrow'},
+      el('input',{type:'text',value:e.name,placeholder:'Enemy name',onchange:function(){e.name=this.value;touch();}}),
+      el('span',{class:'fieldlab'},'skill'),
+      el('input',{type:'number',value:e.skill,onchange:function(){e.skill=+this.value||0;touch();}}),
+      el('span',{class:'fieldlab'},'stamina'),
+      el('input',{type:'number',value:e.stamina,onchange:function(){e.stamina=+this.value||0;touch();}}),
+      el('button',{class:'iconbtn ghost',title:'Remove enemy',onclick:()=>{c.enemies.splice(i,1);touch();scheduleValidate();renderEditor();}},'×')));
+  });
+  box.append(el('div',{class:'row'},
+    el('button',{class:'addrule',onclick:()=>{c.enemies.push({name:'Enemy',skill:6,stamina:6});touch();renderEditor();}},'+ enemy'),
+    el('span',{class:'small dim'},'fought one at a time, in order')));
+  box.append(el('div',{class:'row'},
+    el('span',{class:'fieldlab',style:'min-width:86px'},'if you win →'),
+    targetPicker(()=>c.win,v=>{c.win=v;},{placeholder:'victory target…',width:'200px'}),gotoBtn(()=>c.win)));
+  box.append(el('div',{class:'row'},
+    el('span',{class:'fieldlab',style:'min-width:86px'},'if you lose →'),
+    targetPicker(()=>c.lose,v=>{c.lose=v;},{placeholder:'(death)',width:'200px',optional:true}),gotoBtn(()=>c.lose),
+    el('span',{class:'small faint'},'leave empty for death')));
+  const escOn=!!c.escape;
+  const escRow=el('div',{class:'row'},
+    el('label',{class:'row small dim',style:'min-width:86px'},
+      el('input',{type:'checkbox',checked:escOn,onchange:function(){
+        c.escape=this.checked?{target:null,minRound:1}:null;touch();scheduleValidate();renderEditor();}}),'escape'));
+  if(escOn){
+    escRow.append(
+      targetPicker(()=>c.escape.target,v=>{c.escape.target=v;},{placeholder:'flee to…',width:'200px'}),gotoBtn(()=>c.escape?c.escape.target:null),
+      el('span',{class:'small dim'},'after round'),
+      el('input',{type:'number',value:c.escape.minRound??1,style:'width:60px',min:'0',onchange:function(){c.escape.minRound=+this.value||0;touch();}}),
+      el('span',{class:'small faint'},'(fleeing costs damage)'));
+  }
+  box.append(escRow);
+  box.append(el('div',{class:'row'},
+    el('span',{class:'fieldlab',style:'min-width:86px'},'damage'),
+    el('input',{type:'number',value:c.damage??'',placeholder:String(App.book.settings.damage),style:'width:70px',
+      onchange:function(){c.damage=this.value===''?'':+this.value;touch();}}),
+    el('span',{class:'small faint'},'per wound · blank = book default ('+App.book.settings.damage+')'),
+    el('span',{class:'spacer'}),
+    el('button',{class:'ghost danger small',onclick:async()=>{
+      const ok=await confirmDlg('Remove this combat encounter?',{danger:true,okText:'Remove'});
+      if(!ok)return;snapshot('remove combat');sec.combat=null;touch();scheduleValidate();renderEditor();
+    }},'remove combat')));
+  return box;
+}
+/* ============================= BOOK SETTINGS DIALOG ============================= */
+function bookSettingsDlg(tab){
+  snapshot('edit book settings');
+  const b=App.book;
+  let cur=tab||'book';
+  const body=el('div');
+  const m=el('div',{class:'modal'},el('h2',null,'Book settings'),
+    el('div',{class:'tabbar'},['book','stats','items','conditions'].map(t=>
+      el('button',{class:cur===t?'active':'',onclick:function(){cur=t;paint();[...this.parentNode.children].forEach(x=>x.classList.toggle('active',x===this));}},
+        t[0].toUpperCase()+t.slice(1)))),
+    body,
+    el('div',{class:'mbtns'},el('button',{class:'primary',onclick:()=>{closeModal();rebuildDerived();refreshIssueUI();renderAll();}},'Done')));
+  function statSelOpt(value,onchg){
+    return el('select',{onchange:function(){onchg(this.value||null);touch();}},
+      el('option',{value:'',selected:!value},'— none —'),
+      b.stats.map(s=>el('option',{value:s.id,selected:s.id===value},s.name)));
+  }
+  function paint(){
+    body.innerHTML='';
+    if(cur==='book'){
+      body.append(
+        el('div',{class:'field'},el('label',null,'Title'),
+          el('input',{type:'text',value:b.meta.title,style:'width:100%',oninput:function(){b.meta.title=this.value;touch();updateSaveStateUI();}})),
+        el('div',{class:'field'},el('label',null,'Author'),
+          el('input',{type:'text',value:b.meta.author,style:'width:100%',oninput:function(){b.meta.author=this.value;touch();}})),
+        el('div',{class:'field'},el('label',null,'Start section'),
+          targetPicker(()=>b.settings.start,v=>{b.settings.start=v;},{placeholder:'start section…'})),
+        el('div',{class:'field row'},
+          el('span',null,el('label',null,'Attack stat (combat)'),statSelOpt(b.settings.skillStat,v=>b.settings.skillStat=v)),
+          el('span',null,el('label',null,'Stamina stat (health)'),statSelOpt(b.settings.staminaStat,v=>b.settings.staminaStat=v)),
+          el('span',null,el('label',null,'Damage per wound'),
+            el('input',{type:'number',value:b.settings.damage,style:'width:70px',onchange:function(){b.settings.damage=+this.value||2;touch();}}))),
+        el('div',{class:'field'},
+          el('label',{class:'row'},el('input',{type:'checkbox',checked:b.settings.appendTurnTo,onchange:function(){b.settings.appendTurnTo=this.checked;touch();}}),
+            ' append “(turn to N)” to choices on export'),
+          el('label',{class:'row'},el('input',{type:'checkbox',checked:b.settings.includeTitles,onchange:function(){b.settings.includeTitles=this.checked;touch();}}),
+            ' include section titles in export and Play mode')),
+        el('div',{class:'field'},el('label',null,'Book notes'),
+          el('textarea',{style:'width:100%;min-height:60px',oninput:function(){b.meta.notes=this.value;touch();},html:esc(b.meta.notes)})));
+    } else if(cur==='stats'){
+      const tbl=el('table',null,el('tr',null,['Name','Initial (number or dice)','Min','Max',''].map(h=>el('th',null,h))));
+      b.stats.forEach((s,i)=>tbl.append(el('tr',null,
+        el('td',null,el('input',{type:'text',value:s.name,onchange:function(){s.name=this.value;touch();}})),
+        el('td',null,el('input',{type:'text',value:s.initial,placeholder:'e.g. 12 or 2d6+6',onchange:function(){
+          s.initial=this.value;if(this.value&&!Engine.parseDice(this.value))toast('Invalid dice notation: '+this.value,'err');touch();}})),
+        el('td',null,el('input',{type:'number',value:s.min,style:'width:64px',onchange:function(){s.min=this.value;touch();}})),
+        el('td',null,el('input',{type:'number',value:s.max,style:'width:64px',onchange:function(){s.max=this.value;touch();}})),
+        el('td',null,el('button',{class:'x ghost',title:'Delete stat',onclick:async()=>{
+          const ok=await confirmDlg('Delete stat “'+s.name+'”? References to it will be flagged as errors.',{danger:true,okText:'Delete'});
+          if(ok){b.stats.splice(i,1);touch();paint();}}},'×')))));
+      body.append(tbl,el('button',{class:'addrule',style:'margin-top:8px',onclick:async()=>{
+        const name=await promptDlg('New stat name:','');if(name&&name.trim()){createStatDef(name);paint();}}},'+ add stat'),
+        el('div',{class:'small faint',style:'margin-top:8px'},'Initial values may be dice (rolled when a playthrough starts). Min/Max clamp the stat; leave blank for none.'));
+    } else if(cur==='items'){
+      const tbl=el('table',null,el('tr',null,['Name','Start with',''].map(h=>el('th',null,h))));
+      b.items.forEach((s,i)=>tbl.append(el('tr',null,
+        el('td',null,el('input',{type:'text',value:s.name,onchange:function(){s.name=this.value;touch();}})),
+        el('td',null,el('input',{type:'checkbox',checked:s.startWith,onchange:function(){s.startWith=this.checked;touch();}})),
+        el('td',null,el('button',{class:'x ghost',title:'Delete item',onclick:async()=>{
+          const ok=await confirmDlg('Delete item “'+s.name+'”? References to it will be flagged as errors.',{danger:true,okText:'Delete'});
+          if(ok){b.items.splice(i,1);touch();paint();}}},'×')))));
+      body.append(tbl,el('button',{class:'addrule',style:'margin-top:8px',onclick:async()=>{
+        const name=await promptDlg('New item name:','');if(name&&name.trim()){createItemDef(name);paint();}}},'+ add item'));
+    } else {
+      const tbl=el('table',null,el('tr',null,['Name',''].map(h=>el('th',null,h))));
+      b.flags.forEach((s,i)=>tbl.append(el('tr',null,
+        el('td',null,el('input',{type:'text',value:s.name,onchange:function(){s.name=this.value;touch();}})),
+        el('td',null,el('button',{class:'x ghost',title:'Delete condition',onclick:async()=>{
+          const ok=await confirmDlg('Delete condition “'+s.name+'”? References to it will be flagged as errors.',{danger:true,okText:'Delete'});
+          if(ok){b.flags.splice(i,1);touch();paint();}}},'×')))));
+      body.append(tbl,el('button',{class:'addrule',style:'margin-top:8px',onclick:async()=>{
+        const name=await promptDlg('New condition name:','');if(name&&name.trim()){createFlagDef(name);paint();}}},'+ add condition'),
+        el('div',{class:'small faint',style:'margin-top:8px'},'Conditions are true/false states of the playthrough (e.g. “met the hermit”, “poisoned”), set and cleared by effects.'));
+    }
+  }
+  paint();
+  showModal(m);
+}
+/* ============================= VALIDATION REPORT ============================= */
+function issuesDlg(){
+  rebuildDerived();refreshIssueUI();
+  const list=el('div');
+  const items=[...App.issues].sort((a,b)=>(a.level===b.level?0:a.level==='err'?-1:1));
+  if(!items.length)list.append(el('div',{class:'dim'},'No issues — the book validates cleanly.'));
+  for(const i of items){
+    const s=i.sec?S(i.sec):null;
+    list.append(el('div',{class:'isline'},
+      el('span',{class:'tag '+i.level},i.level==='err'?'error':'warn'),
+      s?el('span',{class:'where',onclick:()=>{closeModal();openSection(s.id);}},'§'+s.number):el('span',{class:'where dim'},'book'),
+      el('span',null,i.msg)));
+  }
+  showModal(el('div',{class:'modal'},el('h2',null,'Validation report'),list,
+    el('div',{class:'mbtns'},el('button',{class:'primary',onclick:closeModal},'Close'))));
+}
+/* ============================= MENU ============================= */
+function toggleMenu(force){
+  const p=$('#menuPanel');
+  const show=force!=null?force:p.classList.contains('hidden');
+  if(!show){p.classList.add('hidden');return;}
+  p.innerHTML='';
+  const mi=(label,fn,kbd)=>el('button',{class:'mitem',onclick:()=>{toggleMenu(false);fn();}},label,kbd?el('span',{class:'kbd'},kbd):null);
+  p.append(
+    mi('New book…',newBookCmd),
+    mi('Open…',openFileCmd,'Ctrl+O'),
+    mi('Save',saveFileCmd,'Ctrl+S'),
+    mi('Save As…',()=>saveFileCmd(true)),
+    el('div',{class:'msep'}),
+    mi('Export…',exportDlg,'Ctrl+E'),
+    el('div',{class:'msep'}),
+    mi('Book settings…',()=>bookSettingsDlg(),''),
+    mi('Validation report',issuesDlg),
+    el('div',{class:'mhead'},'Tools'),
+    mi('Shuffle section numbers…',async()=>{
+      const ok=await confirmDlg('Shuffle the numbers of all sections (except locked ones)?\nLinks are kept intact — only the printed numbers change.',{okText:'Shuffle'});
+      if(ok)shuffleNumbers();}),
+    mi('Compact numbers to 1…N',async()=>{
+      const ok=await confirmDlg('Renumber all sections 1…N in their current numeric order, removing gaps?',{okText:'Renumber'});
+      if(ok)compactNumbers();}),
+    mi('Undo',undo,'Ctrl+Z'),
+    el('div',{class:'msep'}),
+    mi('Backups…',backupsDlg),
+    mi('Load sample book',loadSampleCmd),
+    mi('Toggle dark/light theme',toggleTheme),
+    mi('Help & shortcuts',helpDlg,'?')
+  );
+  p.classList.remove('hidden');
+}
+function toggleTheme(){
+  const b=document.body;
+  const next=b.dataset.theme==='dark'?'light':'dark';
+  b.dataset.theme=next;
+  try{localStorage.setItem('gbs-theme',next);}catch(e){}
+  if(App.mode==='graph')drawGraph();
+}
+/* ============================= SHEET VIEW ============================= */
+const SHEET_COLS=[['number','№'],['title','Title'],['status','Status'],['tags','Tags'],['words','Words'],['out','Out'],['inn','In'],['issues','Issues']];
+function renderSheet(){
+  rebuildDerived();
+  const wrap=$('#sheetWrap');if(!wrap)return;
+  wrap.innerHTML='';
+  let rows=sortedSections().filter(s=>matchesFilter(s,App.sheet.q)).map(s=>({
+    s,words:wordsOf(s.text),
+    out:targetsOf(s).filter(t=>t.id).length,
+    inn:(App.backlinks[s.id]||[]).length,
+    issues:App.issueBySec[s.id]||[]
+  }));
+  const k=App.sheet.sort,dir=App.sheet.dir;
+  rows.sort((a,b)=>{
+    let va,vb;
+    if(k==='number'){va=a.s.number;vb=b.s.number;}
+    else if(k==='title'){va=a.s.title.toLowerCase();vb=b.s.title.toLowerCase();}
+    else if(k==='status'){va=STATUSES.indexOf(a.s.status);vb=STATUSES.indexOf(b.s.status);}
+    else if(k==='tags'){va=a.s.tags.join(',');vb=b.s.tags.join(',');}
+    else if(k==='issues'){va=a.issues.length;vb=b.issues.length;}
+    else {va=a[k];vb=b[k];}
+    return (va<vb?-1:va>vb?1:a.s.number-b.s.number)*dir;
+  });
+  const thead=el('tr',null,SHEET_COLS.map(([key,label])=>
+    el('th',{onclick:()=>{
+      if(App.sheet.sort===key)App.sheet.dir*=-1;else{App.sheet.sort=key;App.sheet.dir=1;}
+      renderSheet();
+    }},label+(App.sheet.sort===key?(App.sheet.dir>0?' ▲':' ▼'):''))));
+  const tbl=el('table',null,thead);
+  const frag=document.createDocumentFragment();
+  for(const r of rows){
+    const s=r.s;
+    const lev=r.issues.length?(r.issues.some(i=>i.level==='err')?'err':'warn'):null;
+    frag.append(el('tr',null,
+      el('td',{class:'num',title:'Open in Write mode',onclick:()=>openSection(s.id)},String(s.number)),
+      el('td',null,el('input',{type:'text',value:s.title,placeholder:firstWords(s.text)||'untitled',
+        onchange:function(){s.title=this.value;touch();}})),
+      el('td',null,el('select',{onchange:function(){s.status=this.value;touch();}},
+        STATUSES.map(st=>el('option',{value:st,selected:st===s.status},st)))),
+      el('td',null,el('input',{type:'text',value:s.tags.join(', '),style:'min-width:80px',
+        onchange:function(){s.tags=this.value.split(',').map(t=>t.trim()).filter(Boolean);touch();}})),
+      el('td',{class:'cnt'},String(r.words)),
+      el('td',{class:'cnt'},String(r.out)),
+      el('td',{class:'cnt'},String(r.inn)),
+      el('td',null,lev?el('span',{class:'iss '+lev,title:r.issues.map(i=>i.msg).join('\n'),
+        onclick:()=>openSection(s.id)},String(r.issues.length)):el('span',{class:'faint'},'—'))
+    ));
+  }
+  tbl.append(frag);
+  wrap.append(tbl);
+  $('#shCount').textContent=rows.length+(rows.length===App.book.sections.length?' sections':' of '+App.book.sections.length+' sections');
+}
+/* ============================= GRAPH VIEW ============================= */
+const NODE_W=172,NODE_H=40,COL_W=240,ROW_H=58;
+function buildGraph(){
+  if(App.graph.built)return;
+  const b=App.book,g=App.graph;
+  const idSet=new Set(b.sections.map(s=>s.id));
+  const adj={},inAdj={},edges=[];
+  for(const s of b.sections){adj[s.id]=[];}
+  for(const s of b.sections)for(const t of targetsOf(s)){
+    if(t.id&&idSet.has(t.id)){adj[s.id].push(t.id);(inAdj[t.id]=inAdj[t.id]||[]).push(s.id);edges.push({from:s.id,to:t.id,kind:t.kind});}
+  }
+  /* BFS depth from start */
+  const depth={};let maxD=0;
+  const start=b.settings.start&&S(b.settings.start)?b.settings.start:null;
+  if(start){
+    depth[start]=0;const q=[start];let qi=0;
+    while(qi<q.length){const id=q[qi++];for(const t of adj[id])if(depth[t]==null){depth[t]=depth[id]+1;if(depth[t]>maxD)maxD=depth[t];q.push(t);}}
+  }
+  /* unreachable sections: BFS their own subgraph, offset to the right */
+  const un=b.sections.filter(s=>depth[s.id]==null);
+  if(un.length){
+    const unset=new Set(un.map(s=>s.id));
+    const roots=un.filter(s=>!(inAdj[s.id]||[]).some(p=>unset.has(p)));
+    const q=(roots.length?roots:un.slice(0,1)).map(s=>s.id);
+    const off=start?maxD+2:0;
+    for(const id of q)depth[id]=off;
+    let qi=0;
+    while(qi<q.length){const id=q[qi++];for(const t of adj[id])if(depth[t]==null&&unset.has(t)){depth[t]=depth[id]+1;q.push(t);}}
+    for(const s of un)if(depth[s.id]==null)depth[s.id]=off;
+  }
+  /* columns + one barycenter ordering pass */
+  const cols={};
+  for(const s of b.sections){(cols[depth[s.id]]=cols[depth[s.id]]||[]).push(s);}
+  const colKeys=Object.keys(cols).map(Number).sort((a,b)=>a-b);
+  const orderIdx={};
+  const pos={};
+  for(let ci=0;ci<colKeys.length;ci++){
+    let arr=cols[colKeys[ci]];
+    if(ci>0){
+      arr=arr.map(s=>{
+        const ps=(inAdj[s.id]||[]).filter(p=>orderIdx[p]!=null);
+        const bary=ps.length?ps.reduce((acc,p)=>acc+orderIdx[p],0)/ps.length:1e9;
+        return {s,bary};
+      }).sort((a,b)=>a.bary-b.bary||a.s.number-b.s.number).map(x=>x.s);
+    } else arr=[...arr].sort((a,b)=>a.number-b.number);
+    arr.forEach((s,i)=>{orderIdx[s.id]=i;pos[s.id]={x:colKeys[ci]*COL_W,y:i*ROW_H};});
+  }
+  /* manually placed nodes (dragged in graph mode) override the automatic layout */
+  for(const s of b.sections)if(s.gpos)pos[s.id]={x:s.gpos.x,y:s.gpos.y};
+  g.pos=pos;g.edges=edges;g.built=true;g.everBuilt=true;
+}
+function graphColors(){
+  const cs=getComputedStyle(document.body);
+  const v=n=>cs.getPropertyValue(n).trim();
+  return {bg2:v('--bg2'),border:v('--border2'),fg:v('--fg'),dim:v('--fg-dim'),faint:v('--fg-faint'),
+    accent:v('--accent'),danger:v('--danger'),warn:v('--warn'),
+    st:{todo:v('--st-todo'),draft:v('--st-draft'),review:v('--st-review'),done:v('--st-done')}};
+}
+function drawGraph(){
+  const cv=$('#graphCanvas'),wrapEl=$('#graphWrap');
+  if(!cv||!wrapEl||!App.book)return;
+  buildGraph();
+  const g=App.graph,dpr=window.devicePixelRatio||1;
+  const W=wrapEl.clientWidth,H=wrapEl.clientHeight;
+  if(!W||!H)return;
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
+  const ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  const C=graphColors();
+  const showTitles=$('#gShowTitles').checked;
+  const vis=p=>{const sx=p.x*g.k+g.x,sy=p.y*g.k+g.y;return sx>-300&&sx<W+300&&sy>-200&&sy<H+200;};
+  ctx.save();
+  ctx.translate(g.x,g.y);ctx.scale(g.k,g.k);
+  /* edges */
+  ctx.lineWidth=1.4/g.k;
+  const selId=App.cur;
+  const later=[];
+  for(const e of g.edges){
+    const a=g.pos[e.from],b2=g.pos[e.to];
+    if(!a||!b2)continue;
+    if(!vis(a)&&!vis(b2))continue;
+    if(e.from===selId||e.to===selId){later.push(e);continue;}
+    drawEdge(ctx,a,b2,e.kind==='combat'?C.danger:e.kind==='check'?C.warn:C.faint,g.k,false);
+  }
+  for(const e of later){
+    drawEdge(ctx,g.pos[e.from],g.pos[e.to],C.accent,g.k,true);
+  }
+  /* nodes */
+  /* live link-drag: dashed preview edge */
+  if(g.linkDrag){
+    const a=g.pos[g.linkDrag.from];
+    if(a){
+      ctx.save();
+      ctx.strokeStyle=C.accent;
+      ctx.lineWidth=2/Math.max(g.k,.4);
+      ctx.setLineDash([7/g.k,6/g.k]);
+      ctx.beginPath();
+      ctx.moveTo(a.x+NODE_W,a.y+NODE_H/2);
+      ctx.lineTo(g.linkDrag.x,g.linkDrag.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  const fontPx=12;
+  ctx.textBaseline='middle';
+  for(const s of App.book.sections){
+    const p=g.pos[s.id];
+    if(!p||!vis(p))continue;
+    const lev=secIssueLevel(s.id);
+    const isDropTarget=g.linkDrag&&g.linkDrag.over===s.id;
+    ctx.beginPath();
+    roundRect(ctx,p.x,p.y,NODE_W,NODE_H,8);
+    ctx.fillStyle=isDropTarget?C.accent+'33':C.bg2;ctx.fill();
+    ctx.lineWidth=((s.id===selId||isDropTarget)?2.4:1.2)/Math.max(g.k,.4);
+    ctx.strokeStyle=(s.id===selId||isDropTarget)?C.accent:(lev==='err'?C.danger:lev==='warn'?C.warn:C.border);
+    ctx.stroke();
+    ctx.fillStyle=C.st[s.status]||C.dim;
+    ctx.fillRect(p.x,p.y+4,3.4,NODE_H-8);
+    if(g.k>0.32){
+      ctx.fillStyle=C.fg;
+      ctx.font='700 '+fontPx+'px '+'ui-monospace,Consolas,monospace';
+      const numTxt=String(s.number)+(App.book.settings.start===s.id?' ▶':'');
+      ctx.fillText(numTxt,p.x+10,p.y+(showTitles?13:NODE_H/2));
+      if(showTitles){
+        ctx.fillStyle=C.dim;
+        ctx.font='11px system-ui,sans-serif';
+        let t=s.title||firstWords(s.text)||'';
+        if(t.length>24)t=t.slice(0,23)+'…';
+        ctx.fillText(t,p.x+10,p.y+28);
+      }
+    }
+  }
+  /* ⊕ link port on the selected node — drag from here to link or create */
+  if(selId&&g.pos[selId]){
+    const p=g.pos[selId];
+    const r=Math.max(9,8/g.k);
+    const cx2=p.x+NODE_W,cy2=p.y+NODE_H/2;
+    ctx.beginPath();
+    ctx.arc(cx2,cy2,r,0,Math.PI*2);
+    ctx.fillStyle=C.accent;ctx.fill();
+    ctx.lineWidth=1.6/Math.max(g.k,.4);
+    ctx.strokeStyle=C.bg2;ctx.stroke();
+    ctx.fillStyle=C.bg2;
+    ctx.font='700 '+(r*1.5)+'px system-ui,sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('+',cx2,cy2+r*0.08);
+    ctx.textAlign='left';
+  }
+  ctx.restore();
+}
+function portHit(wx,wy){
+  const g=App.graph;
+  if(!App.cur||!g.pos[App.cur])return false;
+  const p=g.pos[App.cur];
+  const r=Math.max(11,10/g.k);
+  return Math.hypot(wx-(p.x+NODE_W),wy-(p.y+NODE_H/2))<=r;
+}
+function roundRect(ctx,x,y,w,h,r){
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+function drawEdge(ctx,a,b,color,k,bold){
+  const x1=a.x+NODE_W,y1=a.y+NODE_H/2,x2=b.x,y2=b.y+NODE_H/2;
+  ctx.strokeStyle=color;
+  ctx.lineWidth=(bold?2.2:1.2)/Math.max(k,.4);
+  ctx.beginPath();
+  if(x2>x1){
+    const mx=(x1+x2)/2;
+    ctx.moveTo(x1,y1);ctx.bezierCurveTo(mx,y1,mx,y2,x2,y2);
+  } else { /* back-link: loop around */
+    ctx.moveTo(x1,y1);
+    ctx.bezierCurveTo(x1+70,y1-30,x2-70,y2-30,x2,y2);
+  }
+  ctx.stroke();
+  /* arrowhead */
+  if(k>0.25){
+    const ang=x2>x1?0:Math.atan2(y2-(y2-30),70);
+    ctx.beginPath();
+    ctx.moveTo(x2,y2);
+    ctx.lineTo(x2-8,y2-4);
+    ctx.lineTo(x2-8,y2+4);
+    ctx.closePath();
+    ctx.fillStyle=color;ctx.fill();
+  }
+}
+function graphFit(){
+  const g=App.graph,wrapEl=$('#graphWrap');
+  buildGraph();
+  const ps=Object.values(g.pos);
+  if(!ps.length||!wrapEl)return;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const p of ps){x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x+NODE_W);y1=Math.max(y1,p.y+NODE_H);}
+  const W=wrapEl.clientWidth,H=wrapEl.clientHeight,pad=40;
+  const k=Math.min((W-pad*2)/(x1-x0||1),(H-pad*2)/(y1-y0||1),1.15);
+  g.k=Math.max(k,0.06);
+  g.x=(W-(x1-x0)*g.k)/2-x0*g.k;
+  g.y=(H-(y1-y0)*g.k)/2-y0*g.k;
+  drawGraph();
+}
+function graphZoom(f,cx,cy){
+  const g=App.graph,wrapEl=$('#graphWrap');
+  if(cx==null){cx=wrapEl.clientWidth/2;cy=wrapEl.clientHeight/2;}
+  const nk=Math.min(Math.max(g.k*f,0.06),2.6);
+  const r=nk/g.k;
+  g.x=cx-(cx-g.x)*r; g.y=cy-(cy-g.y)*r; g.k=nk;
+  drawGraph();
+}
+function graphHit(mx,my){
+  const g=App.graph;
+  const wx=(mx-g.x)/g.k,wy=(my-g.y)/g.k;
+  const secs=App.book.sections;
+  for(let i=secs.length-1;i>=0;i--){
+    const p=g.pos[secs[i].id];
+    if(p&&wx>=p.x&&wx<=p.x+NODE_W&&wy>=p.y&&wy<=p.y+NODE_H)return secs[i];
+  }
+  return null;
+}
+const scheduleGraphDraw=debounce(()=>{if(App.mode==='graph'){buildGraph();drawGraph();}},250);
+function setupGraph(){
+  const cv=$('#graphCanvas'),wrapEl=$('#graphWrap');
+  const ptrs=new Map();
+  let panStart=null,pinchStart=null,moved=false,nodeDrag=null;
+  let lastTap={id:null,t:0,x:0,y:0};
+  const world=e=>{const g=App.graph;return {x:(e.offsetX-g.x)/g.k,y:(e.offsetY-g.y)/g.k};};
+  cv.addEventListener('pointerdown',e=>{
+    try{cv.setPointerCapture(e.pointerId);}catch(err){}
+    ptrs.set(e.pointerId,{x:e.offsetX,y:e.offsetY});
+    moved=false;
+    if(ptrs.size===2){
+      const [a,b]=[...ptrs.values()];
+      pinchStart={d:Math.hypot(a.x-b.x,a.y-b.y),k:App.graph.k,cx:(a.x+b.x)/2,cy:(a.y+b.y)/2,gx:App.graph.x,gy:App.graph.y};
+      panStart=null;nodeDrag=null;App.graph.linkDrag=null;
+      return;
+    }
+    const w=world(e);
+    if(portHit(w.x,w.y)){
+      App.graph.linkDrag={from:App.cur,x:w.x,y:w.y,over:null};
+      drawGraph();
+      return;
+    }
+    const hit=graphHit(e.offsetX,e.offsetY);
+    if(hit){
+      const p=App.graph.pos[hit.id];
+      nodeDrag={sec:hit,dx:w.x-p.x,dy:w.y-p.y,sx:e.offsetX,sy:e.offsetY,snapped:false};
+    } else {
+      panStart={x:e.offsetX,y:e.offsetY,gx:App.graph.x,gy:App.graph.y};
+    }
+  });
+  cv.addEventListener('pointermove',e=>{
+    if(!ptrs.has(e.pointerId))return;
+    ptrs.set(e.pointerId,{x:e.offsetX,y:e.offsetY});
+    const g=App.graph;
+    if(ptrs.size===2&&pinchStart){
+      const [a,b]=[...ptrs.values()];
+      const d=Math.hypot(a.x-b.x,a.y-b.y);
+      const cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;
+      const nk=Math.min(Math.max(pinchStart.k*(d/pinchStart.d),0.06),2.6);
+      const r=nk/pinchStart.k;
+      g.k=nk;
+      g.x=cx-(pinchStart.cx-pinchStart.gx)*r;
+      g.y=cy-(pinchStart.cy-pinchStart.gy)*r;
+      moved=true;drawGraph();
+      return;
+    }
+    if(g.linkDrag){
+      const w=world(e);
+      g.linkDrag.x=w.x;g.linkDrag.y=w.y;
+      const over=graphHit(e.offsetX,e.offsetY);
+      g.linkDrag.over=(over&&over.id!==g.linkDrag.from)?over.id:null;
+      moved=true;drawGraph();
+      return;
+    }
+    if(nodeDrag){
+      if(!moved&&Math.hypot(e.offsetX-nodeDrag.sx,e.offsetY-nodeDrag.sy)>4){
+        moved=true;
+        if(!nodeDrag.snapped){snapshot('move section');nodeDrag.snapped=true;}
+        cv.classList.add('panning');
+      }
+      if(moved){
+        const w=world(e);
+        const nx=Math.round(w.x-nodeDrag.dx),ny=Math.round(w.y-nodeDrag.dy);
+        nodeDrag.sec.gpos={x:nx,y:ny};
+        App.graph.pos[nodeDrag.sec.id]={x:nx,y:ny};
+        drawGraph();
+      }
+      return;
+    }
+    if(panStart){
+      const dx=e.offsetX-panStart.x,dy=e.offsetY-panStart.y;
+      if(Math.abs(dx)+Math.abs(dy)>4){moved=true;cv.classList.add('panning');}
+      if(moved){g.x=panStart.gx+dx;g.y=panStart.gy+dy;drawGraph();}
+    }
+  });
+  const up=e=>{
+    if(ptrs.has(e.pointerId))ptrs.delete(e.pointerId);
+    cv.classList.remove('panning');
+    if(ptrs.size<2)pinchStart=null;
+    const g=App.graph;
+    if(g.linkDrag){
+      const ld=g.linkDrag;g.linkDrag=null;
+      const from=S(ld.from);
+      if(from&&moved){
+        const target=graphHit(e.offsetX,e.offsetY);
+        if(target&&target.id!==from.id)addGraphLink(from,target.id);
+        else if(!target){const w=world(e);createSectionAt(w.x,w.y,from);}
+        else drawGraph();
+      } else drawGraph();
+      panStart=null;nodeDrag=null;moved=false;
+      return;
+    }
+    if(nodeDrag){
+      const nd=nodeDrag;nodeDrag=null;
+      if(moved){touch();drawGraph();}
+      else{
+        const now=performance.now();
+        if(lastTap.id===nd.sec.id&&now-lastTap.t<420){openSection(nd.sec.id);lastTap.id=null;}
+        else{
+          lastTap={id:nd.sec.id,t:now,x:0,y:0};
+          App.cur=nd.sec.id;App.graph.sideOpen=true;
+          drawGraph();renderGraphSide();
+        }
+      }
+      panStart=null;moved=false;
+      return;
+    }
+    if(ptrs.size===0&&!moved){
+      const now=performance.now();const w=world(e);
+      if(lastTap.id==='__empty__'&&now-lastTap.t<420&&Math.hypot(w.x-lastTap.x,w.y-lastTap.y)<40){
+        createSectionAt(w.x,w.y,null);
+        lastTap.id=null;
+      } else lastTap={id:'__empty__',t:now,x:w.x,y:w.y};
+    }
+    panStart=null;moved=false;
+  };
+  cv.addEventListener('pointerup',up);
+  cv.addEventListener('pointercancel',up);
+  cv.addEventListener('wheel',e=>{
+    e.preventDefault();
+    graphZoom(e.deltaY<0?1.18:1/1.18,e.offsetX,e.offsetY);
+  },{passive:false});
+  $('#gFit').addEventListener('click',graphFit);
+  $('#gZoomIn').addEventListener('click',()=>graphZoom(1.3));
+  $('#gZoomOut').addEventListener('click',()=>graphZoom(1/1.3));
+  $('#gShowTitles').addEventListener('change',drawGraph);
+  $('#gNew').addEventListener('click',()=>{
+    const g=App.graph;
+    createSectionAt((wrapEl.clientWidth/2-g.x)/g.k,(wrapEl.clientHeight/2-g.y)/g.k,null);
+  });
+  $('#gRelayout').addEventListener('click',relayoutGraph);
+  new ResizeObserver(()=>{if(App.mode==='graph')drawGraph();}).observe(wrapEl);
+}
+/* ---- graph editing ---- */
+function createSectionAt(wx,wy,fromSec){
+  snapshot(fromSec?'add linked section':'add section');
+  const s=newSectionObj();
+  s.gpos={x:Math.round(wx-NODE_W/2),y:Math.round(wy-NODE_H/2)};
+  App.book.sections.push(s);
+  if(!App.book.settings.start)App.book.settings.start=s.id;
+  if(fromSec)fromSec.choices.push(Object.assign(newChoiceObj(),{target:s.id}));
+  App.cur=s.id;App.graph.sideOpen=true;
+  touch();rebuildDerived();refreshIssueUI();
+  buildGraph();drawGraph();renderGraphSide(true);
+  return s;
+}
+function addGraphLink(fromSec,toId){
+  if(fromSec.choices.some(c=>c.kind!=='check'&&c.target===toId)){toast('These sections are already linked');drawGraph();return;}
+  snapshot('add link');
+  fromSec.choices.push(Object.assign(newChoiceObj(),{target:toId}));
+  touch();rebuildDerived();refreshIssueUI();
+  buildGraph();drawGraph();renderGraphSide();
+  toast('Linked §'+fromSec.number+' → §'+(S(toId)?S(toId).number:'?')+' — give the choice its text in the panel');
+}
+async function relayoutGraph(){
+  const pinned=App.book.sections.filter(s=>s.gpos).length;
+  const ok=await confirmDlg('Recompute the automatic layout?'+(pinned?'\nThis clears the saved positions of '+pinned+' manually placed section'+(pinned>1?'s':'')+'.':''),{okText:'Re-layout'});
+  if(!ok)return;
+  snapshot('re-layout graph');
+  for(const s of App.book.sections)delete s.gpos;
+  touch();
+  App.graph.built=false;buildGraph();graphFit();
+}
+function renderGraphSide(focusTitle){
+  const side=$('#graphSide');if(!side)return;
+  const sec=App.cur?S(App.cur):null;
+  const open=!!sec&&App.graph.sideOpen!==false&&App.mode==='graph';
+  side.classList.toggle('hidden',!open);
+  side.innerHTML='';
+  if(!open)return;
+  function targetChip(id,prefix){
+    const t=id?S(id):null;
+    if(!t)return el('span',{class:'gchip ro',style:'color:var(--danger)',title:'No target — broken'},(prefix?prefix+' ':'')+'?');
+    return el('span',{class:'gchip',title:(t.title||'untitled')+' — click to select',
+      onclick:()=>{App.cur=t.id;App.graph.sideOpen=true;drawGraph();renderGraphSide();}},(prefix?prefix+' ':'→ ')+t.number);
+  }
+  function delChoiceBtn(sec2,c){
+    return el('button',{class:'x ghost iconbtn',title:'Remove this choice/link',onclick:async()=>{
+      if(c.text){const ok=await confirmDlg('Remove the choice “'+c.text+'”?',{danger:true,okText:'Remove'});if(!ok)return;}
+      snapshot('remove link');
+      sec2.choices.splice(sec2.choices.indexOf(c),1);
+      touch();rebuildDerived();refreshIssueUI();buildGraph();drawGraph();renderGraphSide();
+    }},'×');
+  }
+  side.append(el('div',{class:'gshead'},
+    el('span',{class:'gsnum'},'§'+sec.number),
+    el('span',{class:'spacer'}),
+    el('button',{class:'small',title:'Open in Write mode for full editing',onclick:()=>openSection(sec.id)},'✎ Write'),
+    el('button',{class:'iconbtn ghost',title:'Close panel',onclick:()=>{App.graph.sideOpen=false;renderGraphSide();}},'×')));
+  const titleIn=el('input',{type:'text',placeholder:'Section title',value:sec.title,
+    oninput:()=>{sec.title=titleIn.value;touch();}});
+  side.append(titleIn);
+  const statusSel=el('select',{onchange:()=>{sec.status=statusSel.value;touch();}},
+    STATUSES.map(s2=>el('option',{value:s2,selected:s2===sec.status},s2)));
+  const endSel=el('select',{onchange:()=>{sec.ending=endSel.value?{kind:endSel.value}:null;touch();rebuildDerived();refreshIssueUI();renderGraphSide();}},
+    [['','passage'],['victory','ending · victory'],['death','ending · death'],['end','ending · neutral']]
+      .map(([v,t])=>el('option',{value:v,selected:(sec.ending?(sec.ending.kind||'end'):'')===v},t)));
+  side.append(el('div',{class:'row'},statusSel,endSel));
+  const txt=el('textarea',{placeholder:'Section text…',spellcheck:'true'});
+  txt.value=sec.text;
+  txt.addEventListener('input',()=>{sec.text=txt.value;touch();const wc=side.querySelector('.gwc');if(wc)wc.textContent=wordsOf(sec.text)+' words';});
+  side.append(txt);
+  side.append(el('div',{class:'small faint gwc'},wordsOf(sec.text)+' words'));
+  side.append(el('div',{class:'seclabel'},'Links out'));
+  sec.choices.forEach(c=>{
+    if(c.kind==='check'){
+      const ck=c.check||{};
+      side.append(el('div',{class:'gchoice'},
+        el('span',{class:'small dim',style:'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'},'🎲 '+(c.text||'dice test')),
+        targetChip(ck.success,'✓'),targetChip(ck.fail,'✗'),
+        delChoiceBtn(sec,c)));
+    } else {
+      const ti=el('input',{type:'text',placeholder:'choice text…',value:c.text,
+        oninput:function(){c.text=this.value;touch();}});
+      side.append(el('div',{class:'gchoice'},ti,targetChip(c.target),delChoiceBtn(sec,c)));
+    }
+  });
+  if(sec.combat){
+    side.append(el('div',{class:'gchoice'},
+      el('span',{class:'small dim',style:'flex:1'},'⚔ '+(sec.combat.enemies||[]).map(e2=>e2.name).join(', ')),
+      targetChip(sec.combat.win,'win'),
+      sec.combat.lose?targetChip(sec.combat.lose,'lose'):null,
+      sec.combat.escape&&sec.combat.escape.target?targetChip(sec.combat.escape.target,'flee'):null));
+  }
+  side.append(el('div',{class:'gchoice'},
+    targetPicker(()=>null,v=>{if(v)addGraphLink(sec,v);},{placeholder:'+ link to section…',optional:true}),
+    el('button',{class:'addrule',title:'Create a new section linked from this one',onclick:()=>{
+      const p=App.graph.pos[sec.id]||{x:0,y:0};
+      const kids=targetsOf(sec).filter(t=>t.id).length;
+      createSectionAt(p.x+COL_W+NODE_W/2,p.y+NODE_H/2+kids*ROW_H-NODE_H/2,sec);
+    }},'+ new')));
+  const iss=App.issueBySec[sec.id]||[];
+  if(iss.length){
+    side.append(el('div',{class:'seclabel'},'Issues'));
+    iss.slice(0,5).forEach(i2=>side.append(el('div',{class:'isline'},
+      el('span',{class:'tag '+i2.level},i2.level==='err'?'error':'warn'),
+      el('span',{class:'small'},i2.msg))));
+  }
+  side.append(el('div',{style:'flex:1'}));
+  side.append(el('button',{class:'ghost danger small',style:'align-self:flex-start',onclick:()=>deleteSection(sec.id)},'Delete section'));
+  if(focusTitle)setTimeout(()=>{titleIn.focus();titleIn.select();},30);
+}
+/* ============================= PLAY MODE ============================= */
+function mdLite(t){
+  let h=esc(t);
+  h=h.replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>').replace(/\*([^*\n]+)\*/g,'<i>$1</i>');
+  return h.split(/\n{2,}/).map(p=>'<p>'+p.replace(/\n/g,'<br>')+'</p>').join('');
+}
+function playRestart(announce=true){
+  if(!App.book)return;
+  App.play.history=[];
+  App.play.state=Engine.newState(App.book,null,App.play.seed);
+  if(announce)toast('New playthrough started');
+  renderPlay();
+}
+function playFromHere(){
+  if(!App.cur){toast('No current section');return;}
+  App.play.history=[];
+  App.play.state=Engine.newState(App.book,App.cur,App.play.seed);
+  renderPlay();
+  toast('Playing from §'+(S(App.cur)?S(App.cur).number:'?')+' with fresh stats');
+}
+function playSnap(){App.play.history.push(JSON.stringify(App.play.state));if(App.play.history.length>400)App.play.history.shift();}
+function playChoose(i){playSnap();Engine.choose(App.book,App.play.state,i);renderPlay();}
+function playFight(){playSnap();Engine.combatRound(App.book,App.play.state);renderPlay();}
+function playFlee(){playSnap();Engine.combatEscape(App.book,App.play.state);renderPlay();}
+function playBack(){
+  const h=App.play.history.pop();
+  if(!h){toast('Already at the beginning');return;}
+  App.play.state=JSON.parse(h);renderPlay();
+}
+function renderPlay(){
+  const page=$('#playPage');if(!page)return;
+  $('#plSeed').textContent=String(App.play.seed>>>0);
+  page.innerHTML='';
+  const st=App.play.state,b=App.book;
+  if(!st){page.append(el('div',{class:'dim'},'Press Restart to begin.'));return;}
+  const sec=S(st.at);
+  if(sec){
+    page.append(el('div',{class:'pp-num'},String(sec.number)));
+    if(b.settings.includeTitles&&sec.title)page.append(el('div',{class:'pp-title'},sec.title));
+    page.append(el('div',{class:'pp-text',html:mdLite(sec.text)}));
+  }
+  const recent=st.log.slice(st.fxFrom||0).filter(x=>x.t!=='info'&&x.t!=='nav');
+  if(recent.length)page.append(el('div',{class:'pp-fx'},recent.map(r=>el('div',null,r.m))));
+  if(st.combat){
+    const cb=st.combat;
+    const box=el('div',{class:'pcombat'},el('h3',null,'⚔ Combat — round '+cb.round));
+    cb.enemies.forEach((e,i)=>box.append(el('div',{class:'enemybar'+(e.stamina<=0?' dead':'')},
+      i===cb.cur?el('b',null,'➤'):el('span',{style:'width:12px'}),
+      el('b',null,e.name),
+      el('span',{class:'small dim'},'SK '+e.skill),
+      el('span',{class:'hp'},el('i',{style:'width:'+Math.max(0,e.stamina/e.max*100)+'%'})),
+      el('span',{class:'small'},Math.max(0,e.stamina)+'/'+e.max))));
+    box.append(el('div',{class:'row',style:'margin-top:10px'},
+      el('button',{class:'primary',onclick:playFight},'⚔ Fight round'),
+      Engine.combatCanEscape(st)?el('button',{onclick:playFlee},'Flee'):null,
+      el('span',{class:'small dim'},Engine.combatCanEscape(st)?'fleeing costs damage':'')));
+    page.append(box);
+  } else if(st.ended){
+    const k=st.ended.kind;
+    page.append(el('div',{class:'pending '+(k==='victory'?'victory':(k==='death'||k==='error')?'death':'')},
+      k==='victory'?'VICTORY — THE END':k==='death'?'YOU HAVE DIED':k==='error'?'⚠ BROKEN LINK':'THE END',
+      st.ended.msg?el('div',{class:'small dim',style:'margin-top:6px;font-weight:400'},st.ended.msg):null));
+    page.append(el('div',{style:'text-align:center;margin-top:14px'},
+      el('button',{class:'primary',onclick:()=>playRestart()},'Restart'),' ',
+      el('button',{onclick:playBack},'← Back one step')));
+  } else if(sec){
+    const cw=el('div',{class:'pp-choices'});
+    const vc=Engine.visibleChoices(b,st);
+    for(const v of vc){
+      cw.append(el('button',{class:'pchoice',disabled:!v.ok,onclick:()=>playChoose(v.idx)},
+        (v.ch.text||'(continue)')+(v.ch.kind==='check'?'  🎲':''),
+        !v.ok?el('span',{class:'why'},v.reasons.join('; ')):null));
+    }
+    if(!vc.length)cw.append(el('div',{class:'dim small'},'No available choices — this is a dead end.'));
+    page.append(cw);
+  } else {
+    page.append(el('div',{class:'pending death'},'⚠ No section here.'));
+  }
+  if(sec)page.append(el('div',{style:'text-align:center;margin-top:30px'},
+    el('button',{class:'ghost small',onclick:()=>openSection(sec.id)},'✎ edit this section')));
+  $('#plBack').disabled=!App.play.history.length;
+  renderPlaySide();
+}
+function renderPlaySide(){
+  const st=App.play.state,b=App.book;
+  if(!st)return;
+  const stats=$('#psStats');stats.innerHTML='';
+  for(const sd of b.stats){
+    const inp=el('input',{type:'number',value:st.stats[sd.id]??0,title:'Editable for testing',
+      onchange:function(){st.stats[sd.id]=Engine.clampStat(b,sd.id,+this.value||0);renderPlay();}});
+    stats.append(el('div',{class:'statrow'},el('span',{class:'sname'},sd.name),inp));
+  }
+  if(!b.stats.length)stats.append(el('div',{class:'small faint'},'No stats defined (Book settings).'));
+  const inv=$('#psInv');inv.innerHTML='';
+  for(const id of [...st.items]){
+    const d=Engine.itemDef(b,id);
+    inv.append(el('div',{class:'invitem'},d?d.name:'['+id+']',
+      el('button',{class:'x ghost iconbtn',title:'Drop (testing)',onclick:()=>{st.items.splice(st.items.indexOf(id),1);renderPlay();}},'×')));
+  }
+  const addable=b.items.filter(d=>!st.items.includes(d.id));
+  if(addable.length)inv.append(el('select',{style:'margin-top:4px;font-size:12px',onchange:function(){
+      if(this.value){st.items.push(this.value);renderPlay();}}},
+    el('option',{value:''},'+ add item (testing)'),
+    addable.map(d=>el('option',{value:d.id},d.name))));
+  if(!st.items.length&&!addable.length)inv.append(el('div',{class:'small faint'},'No items defined.'));
+  const fl=$('#psFlags');fl.innerHTML='';
+  for(const d of b.flags){
+    fl.append(el('label',{class:'invitem',style:'cursor:pointer'},
+      el('input',{type:'checkbox',checked:st.flags.includes(d.id),onchange:function(){
+        if(this.checked){if(!st.flags.includes(d.id))st.flags.push(d.id);}
+        else st.flags.splice(st.flags.indexOf(d.id),1);
+        renderPlay();}}),d.name));
+  }
+  if(!b.flags.length)fl.append(el('div',{class:'small faint'},'No conditions defined.'));
+  const lg=$('#playLog');lg.innerHTML='';
+  for(const e2 of st.log.slice(-250))lg.append(el('div',{class:e2.t},e2.m));
+  $('#playSide').scrollTop=$('#playSide').scrollHeight;
+}
+/* ============================= EXPORT ============================= */
+function statNameOf(id){const d=Engine.statDef(App.book,id);return d?d.name:'['+id+']';}
+function itemNameOf(id){const d=Engine.itemDef(App.book,id);return d?d.name:'['+id+']';}
+function flagNameOf(id){const d=Engine.flagDef(App.book,id);return d?d.name:'['+id+']';}
+function numOf(id){const s=id?S(id):null;return s?String(s.number):'??';}
+function describeReq(r){
+  switch(r.t){
+    case 'hasItem':return 'you have '+itemNameOf(r.item);
+    case 'noItem':return 'you do not have '+itemNameOf(r.item);
+    case 'flagSet':return flagNameOf(r.flag);
+    case 'flagClear':return 'not '+flagNameOf(r.flag);
+    case 'statCmp':return statNameOf(r.stat)+' '+(r.op||'>=')+' '+(r.value??0);
+    default:return '?';
+  }
+}
+function describeFx(e){
+  switch(e.t){
+    case 'addItem':return 'gain '+itemNameOf(e.item);
+    case 'removeItem':return 'lose '+itemNameOf(e.item);
+    case 'setFlag':return 'note: '+flagNameOf(e.flag);
+    case 'clearFlag':return 'no longer: '+flagNameOf(e.flag);
+    case 'statAdd':{const a=+e.amount||0;return statNameOf(e.stat)+' '+(a>=0?'+':'')+a;}
+    case 'statSet':return statNameOf(e.stat)+' = '+(e.value??0);
+    case 'statRoll':return 'roll '+(e.dice||'1d6')+' for '+statNameOf(e.stat);
+    default:return '?';
+  }
+}
+function exportMarkdownText(){
+  const b=App.book,L=[];
+  L.push('# '+b.meta.title);
+  if(b.meta.author)L.push('','*by '+b.meta.author+'*');
+  if(b.stats.length||b.items.some(i=>i.startWith)){
+    L.push('','## Adventure sheet','');
+    for(const s of b.stats)L.push('- **'+s.name+'** — initial: '+(s.initial||'0')+(s.min!==''&&s.min!=null?', min '+s.min:'')+(s.max!==''&&s.max!=null?', max '+s.max:''));
+    const sw=b.items.filter(i=>i.startWith).map(i=>i.name);
+    if(sw.length)L.push('- **Starting equipment:** '+sw.join(', '));
+  }
+  for(const s of sortedSections()){
+    L.push('','---','','## '+s.number+(b.settings.includeTitles&&s.title?'. '+s.title:''),'');
+    if(s.onEnter.length)L.push('*['+s.onEnter.map(describeFx).join('; ')+']*','');
+    if(String(s.text).trim())L.push(s.text.trim());
+    const lines=[];
+    s.choices.forEach(c=>{
+      const cond=c.requires.length?'*If '+c.requires.map(describeReq).join(' and ')+':* ':'';
+      const fx=c.effects.length?' *['+c.effects.map(describeFx).join('; ')+']*':'';
+      if(c.kind==='check'){
+        const ck=c.check||{};
+        lines.push('- '+cond+(c.text||'Test your '+statNameOf(ck.stat))+fx+' — roll '+(ck.dice||'2d6')+' '+(ck.op||'<=')+' '+statNameOf(ck.stat)+'. Success: turn to **'+numOf(ck.success)+'**. Failure: turn to **'+numOf(ck.fail)+'**.');
+      } else {
+        lines.push('- '+cond+(c.text||'Continue')+fx+(b.settings.appendTurnTo?' (turn to **'+numOf(c.target)+'**)':' — **'+numOf(c.target)+'**'));
+      }
+    });
+    if(s.combat){
+      const c=s.combat;
+      let line='- **COMBAT:** '+c.enemies.map(e=>e.name+' (SKILL '+e.skill+', STAMINA '+e.stamina+')').join('; ')+'. If you win, turn to **'+numOf(c.win)+'**.';
+      if(c.lose)line+=' If you are defeated, turn to **'+numOf(c.lose)+'**.';
+      if(c.escape&&c.escape.target)line+=' You may flee'+(c.escape.minRound?' after round '+c.escape.minRound:'')+' to **'+numOf(c.escape.target)+'**.';
+      lines.push(line);
+    }
+    if(lines.length)L.push('',...lines);
+    if(s.ending)L.push('','**THE END'+(s.ending.kind==='victory'?' — VICTORY':s.ending.kind==='death'?' — YOUR ADVENTURE IS OVER':'')+'**');
+  }
+  return L.join('\n')+'\n';
+}
+const PLAYER_CSS='*{box-sizing:border-box}body{margin:0;font:16px/1.6 Georgia,serif;background:#f5f2ea;color:#21201c;display:flex;justify-content:center}'+
+'@media(prefers-color-scheme:dark){body{background:#1d1e21;color:#e8e6e1}aside,header{background:#26272b!important;border-color:#3a3b41!important}.ch{background:#26272b!important;border-color:#4a4b52!important;color:#e8e6e1}.fx{background:#8d7bef22!important}}'+
+'#app{width:min(1000px,100%);display:grid;grid-template-columns:1fr 250px;grid-template-rows:auto 1fr;min-height:100vh}'+
+'header{grid-column:1/3;display:flex;gap:8px;align-items:center;padding:10px 16px;background:#fbfaf7;border-bottom:1px solid #d8d4c8;font-family:system-ui,sans-serif;font-size:14px}'+
+'header .sp{flex:1}button{font:14px system-ui,sans-serif;padding:6px 12px;border-radius:6px;border:1px solid #aaa;background:transparent;color:inherit;cursor:pointer}'+
+'button:disabled{opacity:.4}.pri{background:#6f5bd0;border-color:#6f5bd0;color:#fff}'+
+'main{padding:28px 26px;max-width:660px;margin:0 auto;width:100%}aside{padding:18px;background:#fbfaf7;border-left:1px solid #d8d4c8;font-family:system-ui,sans-serif;font-size:13px}'+
+'aside h4{margin:14px 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;opacity:.6}aside .srow{display:flex;justify-content:space-between;padding:2px 0}'+
+'.num{font:700 15px ui-monospace,monospace;text-align:center;letter-spacing:.2em;opacity:.6}h2{text-align:center;margin:6px 0 18px}'+
+'.fx{margin:16px 0;padding:8px 12px;background:#6f5bd01a;border-radius:8px;font:13px system-ui,sans-serif}'+
+'.choices{margin-top:24px;display:flex;flex-direction:column;gap:8px}.ch{display:block;width:100%;text-align:left;padding:11px 14px;border-radius:8px;background:#fff;border:1px solid #c5c0b1;font-size:15px}'+
+'.ch .why{display:block;font-size:12px;color:#c23b3b;font-family:system-ui,sans-serif}'+
+'.combat{margin-top:20px;border:1px solid #c23b3b;border-radius:10px;padding:14px;font-family:system-ui,sans-serif;font-size:14px}.combat .en.dead{opacity:.4;text-decoration:line-through}.btns{margin-top:10px;display:flex;gap:8px}.center{justify-content:center}'+
+'.end{text-align:center;margin-top:26px;padding:18px;border-radius:10px;border:2px solid #888;font-weight:700;font-size:19px}.end.victory{border-color:#3d8f4e;color:#3d8f4e}.end.death,.end.error{border-color:#c23b3b;color:#c23b3b}'+
+'.dim{opacity:.55}@media(max-width:760px){#app{grid-template-columns:1fr}aside{border-left:none;border-top:1px solid #d8d4c8}}';
+function PlayerMain(){
+  var ST=null,HIST=[];
+  var SEED=(Math.floor(Math.random()*4294967295))>>>0;
+  var root=document.getElementById('app');
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+  function md(t){
+    var x=esc(t);
+    x=x.replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>').replace(/\*([^*\n]+)\*/g,'<i>$1</i>');
+    return x.split(/\n{2,}/).map(function(p){return '<p>'+p.replace(/\n/g,'<br>')+'</p>';}).join('');
+  }
+  function render(){
+    var b=BOOK,st=ST,h='';
+    h+='<header><b>'+esc(b.meta.title)+'</b>'+(b.meta.author?'&nbsp;<span class="dim">by '+esc(b.meta.author)+'</span>':'')+
+      '<span class="sp"></span><button onclick="GB.back()"'+(HIST.length?'':' disabled')+'>&larr; Back</button>&nbsp;<button onclick="GB.restart()">Restart</button></header>';
+    var sec=Engine.section(b,st.at);
+    h+='<main>';
+    if(sec){
+      h+='<div class="num">'+sec.number+'</div>';
+      if(b.settings.includeTitles&&sec.title)h+='<h2>'+esc(sec.title)+'</h2>';
+      h+='<div class="text">'+md(sec.text)+'</div>';
+    }
+    var recent=st.log.slice(st.fxFrom||0).filter(function(x){return x.t!=='info'&&x.t!=='nav';});
+    if(recent.length)h+='<div class="fx">'+recent.map(function(r){return '<div>'+esc(r.m)+'</div>';}).join('')+'</div>';
+    if(st.combat){
+      var cb=st.combat;
+      h+='<div class="combat"><b>⚔ Combat — round '+cb.round+'</b>';
+      cb.enemies.forEach(function(e,j){
+        h+='<div class="en'+(e.stamina<=0?' dead':'')+'">'+(j===cb.cur?'➤ ':'')+esc(e.name)+' — SKILL '+e.skill+', STAMINA '+Math.max(0,e.stamina)+'/'+e.max+'</div>';
+      });
+      h+='<div class="btns"><button class="pri" onclick="GB.fight()">⚔ Fight round</button>';
+      if(Engine.combatCanEscape(st))h+='<button onclick="GB.flee()">Flee</button>';
+      h+='</div></div>';
+    } else if(st.ended){
+      var k=st.ended.kind;
+      h+='<div class="end '+k+'">'+(k==='victory'?'VICTORY — THE END':k==='death'?'YOU HAVE DIED':k==='error'?'BROKEN LINK':'THE END')+'</div>';
+      h+='<div class="btns center"><button class="pri" onclick="GB.restart()">Play again</button></div>';
+    } else {
+      h+='<div class="choices">';
+      var vc=Engine.visibleChoices(b,st);
+      vc.forEach(function(v){
+        h+='<button class="ch"'+(v.ok?' onclick="GB.choose('+v.idx+')"':' disabled')+'>'+esc(v.ch.text||'(continue)')+(v.ch.kind==='check'?' 🎲':'')+
+          (v.ok?'':'<span class="why">'+esc(v.reasons.join('; '))+'</span>')+'</button>';
+      });
+      if(!vc.length)h+='<div class="dim">Dead end.</div>';
+      h+='</div>';
+    }
+    h+='</main><aside>';
+    if(b.stats.length){
+      h+='<h4>Stats</h4>';
+      b.stats.forEach(function(s){h+='<div class="srow"><span>'+esc(s.name)+'</span><b>'+(st.stats[s.id]!=null?st.stats[s.id]:0)+'</b></div>';});
+    }
+    h+='<h4>Inventory</h4>';
+    if(st.items.length)st.items.forEach(function(id){var d=Engine.itemDef(b,id);h+='<div>'+esc(d?d.name:id)+'</div>';});
+    else h+='<div class="dim">— empty —</div>';
+    if(st.flags.length){
+      h+='<h4>Conditions</h4>';
+      st.flags.forEach(function(id){var d=Engine.flagDef(b,id);h+='<div>'+esc(d?d.name:id)+'</div>';});
+    }
+    h+='</aside>';
+    root.innerHTML=h;
+    window.scrollTo(0,0);
+  }
+  window.GB={
+    choose:function(i){HIST.push(JSON.stringify(ST));Engine.choose(BOOK,ST,i);render();},
+    fight:function(){HIST.push(JSON.stringify(ST));Engine.combatRound(BOOK,ST);render();},
+    flee:function(){HIST.push(JSON.stringify(ST));Engine.combatEscape(BOOK,ST);render();},
+    back:function(){var s=HIST.pop();if(s){ST=JSON.parse(s);render();}},
+    restart:function(){SEED=(Math.floor(Math.random()*4294967295))>>>0;ST=Engine.newState(BOOK,null,SEED);HIST=[];render();}
+  };
+  ST=Engine.newState(BOOK,null,SEED);
+  render();
+}
+function exportPlayableHTMLText(){
+  const engine=document.getElementById('engine-src').textContent;
+  const bookJson=serialize().replace(/</g,'\\u003c');
+  return '<!DOCTYPE html>\n<html lang="en"><head><meta charset="utf-8">'+
+    '<meta name="viewport" content="width=device-width, initial-scale=1">'+
+    '<title>'+esc(App.book.meta.title)+'</title><style>'+PLAYER_CSS+'</style></head><body>'+
+    '<div id="app"></div>\n<scr'+'ipt>\n'+engine+'\nvar BOOK='+bookJson+';\n('+PlayerMain.toString()+')();\n</scr'+'ipt>\n</body></html>';
+}
+function download(name,text,mime){
+  const blob=new Blob([text],{type:(mime||'text/plain')+';charset=utf-8'});
+  const a=el('a',{href:URL.createObjectURL(blob),download:name});
+  document.body.append(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+}
+function exportDlg(){
+  if(!App.book)return;
+  let fmt='md';
+  const errs=App.issues.filter(i=>i.level==='err').length;
+  const slug=slugify(App.book.meta.title)||'gamebook';
+  const opt=(v,label,desc)=>el('label',{class:'row',style:'align-items:flex-start;margin-bottom:8px;cursor:pointer'},
+    el('input',{type:'radio',name:'xfmt',value:v,checked:fmt===v,onchange:()=>fmt=v,style:'margin-top:3px'}),
+    el('span',null,el('b',null,label),el('div',{class:'small dim'},desc)));
+  showModal(el('div',{class:'modal'},el('h2',null,'Export'),
+    errs?el('div',{class:'isline',style:'margin-bottom:10px'},el('span',{class:'tag err'},'note'),
+      el('span',null,errs+' validation error'+(errs>1?'s':'')+' — exported book may have broken links. ',
+        el('span',{class:'where',onclick:()=>{closeModal();issuesDlg();}},'view'))):null,
+    opt('md','Markdown (.md)','Classic numbered gamebook text — sections in number order with “turn to N” choice lines. For print or further typesetting.'),
+    opt('html','Playable HTML (.html)','A single self-contained file anyone can open in a browser and play — dice, combat and all. Share it anywhere.'),
+    opt('json','Project copy (.json)','A copy of the project file itself.'),
+    el('div',{class:'mbtns'},
+      el('button',{onclick:closeModal},'Cancel'),
+      el('button',{class:'primary',onclick:()=>{
+        if(fmt==='md')download(slug+'.md',exportMarkdownText(),'text/markdown');
+        else if(fmt==='html')download(slug+'.html',exportPlayableHTMLText(),'text/html');
+        else download(slug+'.gamebook.json',serialize(),'application/json');
+        closeModal();toast('Exported '+(fmt==='md'?slug+'.md':fmt==='html'?slug+'.html':slug+'.gamebook.json'));
+      }},'Export'))));
+}
+/* ============================= FILE IO ============================= */
+const FS_TYPES=[{description:'Gamebook Studio project',accept:{'application/json':['.gamebook','.json']}}];
+function suggestedFileName(){return (slugify(App.book.meta.title)||'gamebook')+'.gamebook.json';}
+async function guardDirty(){
+  if(!App.dirty)return true;
+  return await confirmDlg('You have unsaved changes that will be replaced.\nContinue?',{danger:true,okText:'Continue'});
+}
+function loadParsed(text,opts){
+  try{
+    loadBook(JSON.parse(text),opts);
+    toast('Opened '+(opts.fileName||'book'));
+  }catch(e){toast('Could not open file: '+e.message,'err');}
+}
+async function ensurePerm(h){
+  if(!h)return false;
+  try{
+    if(await h.queryPermission({mode:'readwrite'})==='granted')return true;
+    return (await h.requestPermission({mode:'readwrite'}))==='granted';
+  }catch(e){return false;}
+}
+async function openFileCmd(){
+  if(!await guardDirty())return;
+  if(window.showOpenFilePicker){
+    try{
+      const [h]=await window.showOpenFilePicker({types:FS_TYPES});
+      const f=await h.getFile();
+      loadParsed(await f.text(),{fileName:f.name,fileHandle:h});
+      await store.set('lastFile',{name:f.name,handle:h});
+    }catch(e){if(e&&e.name!=='AbortError')toast('Open failed: '+e.message,'err');}
+  } else $('#fileInput').click();
+}
+async function saveFileCmd(saveAs){
+  if(!App.book)return;
+  rebuildDerived();refreshIssueUI();
+  const text=serialize();
+  if(window.showSaveFilePicker){
+    try{
+      let h=App.fileHandle;
+      if(h&&!saveAs){
+        if(!await ensurePerm(h)){toast('Write permission denied — use Save As','err');return;}
+      } else {
+        h=await window.showSaveFilePicker({suggestedName:App.fileName||suggestedFileName(),types:FS_TYPES});
+        App.fileHandle=h;App.fileName=h.name;
+      }
+      const w=await h.createWritable();
+      await w.write(text);await w.close();
+    }catch(e){
+      if(e&&e.name==='AbortError')return;
+      toast('Save failed: '+e.message,'err');return;
+    }
+  } else {
+    download(App.fileName||suggestedFileName(),text,'application/json');
+    toast('This browser cannot write files in place — saved as a download instead.');
+  }
+  App.dirty=false;updateSaveStateUI();
+  await pushBackup(text);
+  await store.set('autosave',{time:Date.now(),json:text,dirty:false,fileName:App.fileName});
+  if(App.fileHandle)await store.set('lastFile',{name:App.fileName,handle:App.fileHandle});
+  toast('Saved'+(App.fileName?' — '+App.fileName:''));
+}
+async function pushBackup(text){
+  const list=(await store.get('backups'))||[];
+  list.unshift({time:Date.now(),name:App.book.meta.title,json:text});
+  await store.set('backups',list.slice(0,12));
+}
+async function backupsDlg(){
+  const list=(await store.get('backups'))||[];
+  const body=el('div');
+  if(!list.length)body.append(el('div',{class:'dim'},'No backups yet. A backup is kept every time you save (the last 12).'));
+  list.forEach(bk=>body.append(el('div',{class:'row',style:'padding:6px 0;border-bottom:1px solid var(--border)'},
+    el('span',null,el('b',null,bk.name),el('span',{class:'small dim'},'  '+fmtTime(bk.time))),
+    el('span',{class:'spacer'}),
+    el('button',{class:'small',onclick:async()=>{
+      if(!await guardDirty())return;
+      closeModal();
+      loadParsed(bk.json,{fileName:null,dirty:true});
+      toast('Backup restored — Save As to write it to a file');
+    }},'Restore'))));
+  showModal(el('div',{class:'modal'},el('h2',null,'Backups'),body,
+    el('div',{class:'mbtns'},el('button',{class:'primary',onclick:closeModal},'Close'))));
+}
+function showBanner(msg,actions){
+  const w=$('#bannerWrap');w.innerHTML='';
+  w.append(el('div',{id:'banner'},el('span',null,msg),el('span',{class:'spacer'}),
+    (actions||[]).map(a=>el('button',{class:'small',onclick:()=>{w.innerHTML='';a.fn();}},a.label)),
+    el('button',{class:'ghost iconbtn',title:'Dismiss',onclick:()=>w.innerHTML=''},'×')));
+}
+async function newBookCmd(){
+  if(!await guardDirty())return;
+  const title=await promptDlg('Title for the new book:','My Gamebook');
+  if(title==null)return;
+  const b=starterBook();
+  b.meta.title=title.trim()||'Untitled Gamebook';
+  loadBook(b);
+  toast('New book created');
+}
+async function loadSampleCmd(){
+  if(!await guardDirty())return;
+  loadBook(sampleBook());
+  toast('Sample book loaded — try Play mode');
+}
+async function stressCmd(){
+  if(!await guardDirty())return;
+  loadBook(stressBook(1000));
+  toast('Stress-test book generated: 1,000 sections');
+}
+/* ============================= COMMAND PALETTE ============================= */
+let palItems=[],palHl=0;
+function paletteCommands(){
+  const cmds=[
+    ['New section','Alt+N',()=>addSection()],
+    ['Save','Ctrl+S',()=>saveFileCmd()],
+    ['Save As…','',()=>saveFileCmd(true)],
+    ['Open…','Ctrl+O',openFileCmd],
+    ['Export…','Ctrl+E',exportDlg],
+    ['Book settings…','',()=>bookSettingsDlg()],
+    ['Validation report','',issuesDlg],
+    ['Go to Write','Ctrl+1',()=>setMode('write')],
+    ['Go to Sheet','Ctrl+2',()=>setMode('sheet')],
+    ['Go to Graph','Ctrl+3',()=>setMode('graph')],
+    ['Go to Play','Ctrl+4',()=>setMode('play')],
+    ['Restart playthrough','',()=>{setMode('play');playRestart();}],
+    ['Play from current section','',()=>{setMode('play');playFromHere();}],
+    ['Shuffle section numbers','',async()=>{const ok=await confirmDlg('Shuffle the numbers of all unlocked sections?',{okText:'Shuffle'});if(ok)shuffleNumbers();}],
+    ['Compact numbers to 1…N','',async()=>{const ok=await confirmDlg('Renumber all sections 1…N, removing gaps?',{okText:'Renumber'});if(ok)compactNumbers();}],
+    ['Undo','Ctrl+Z',undo],
+    ['Redo','Ctrl+Shift+Z',redo],
+    ['New book…','',newBookCmd],
+    ['Load sample book','',loadSampleCmd],
+    ['Generate stress-test book (1,000 sections)','',stressCmd],
+    ['Backups…','',backupsDlg],
+    ['Toggle dark/light theme','',toggleTheme],
+    ['Help & shortcuts','?',helpDlg]
+  ];
+  if(App.installPrompt)cmds.push(['Install as app','',()=>{
+    const p=App.installPrompt;App.installPrompt=null;
+    p.prompt();
+  }]);
+  return cmds;
+}
+function openPalette(){
+  $('#paletteWrap').classList.remove('hidden');
+  const inp=$('#paletteInput');
+  inp.value='';buildPalette('');
+  setTimeout(()=>inp.focus(),20);
+}
+function closePalette(){$('#paletteWrap').classList.add('hidden');}
+function buildPalette(q){
+  const list=$('#paletteList');list.innerHTML='';
+  q=q.trim().toLowerCase();
+  const isNum=/^\d+$/.test(q);
+  let secs=[];
+  if(q)secs=sortedSections().filter(s=>isNum?String(s.number).startsWith(q):(s.title+' '+s.text).toLowerCase().includes(q)).slice(0,9);
+  let cmds=paletteCommands().filter(c=>!q||c[0].toLowerCase().includes(q)).slice(0,q?8:12);
+  palItems=isNum?[...secs.map(s=>({sec:s})),...cmds.map(c=>({cmd:c}))]
+    :q?[...cmds.map(c=>({cmd:c})),...secs.map(s=>({sec:s}))]
+    :cmds.map(c=>({cmd:c}));
+  palHl=0;
+  palItems.forEach((it,i)=>{
+    const node=it.sec
+      ?el('div',{class:'pli'},el('span',{class:'num'},it.sec.number),el('span',null,it.sec.title||firstWords(it.sec.text)||'untitled'),el('span',{class:'hint'},'open section'))
+      :el('div',{class:'pli'},el('span',null,it.cmd[0]),it.cmd[1]?el('span',{class:'hint kbd'},it.cmd[1]):el('span',{class:'hint'},'command'));
+    node.addEventListener('mousedown',e=>{e.preventDefault();runPal(it);});
+    node.addEventListener('mouseenter',()=>{palHl=i;paintPalHl();});
+    list.append(node);
+  });
+  paintPalHl();
+}
+function paintPalHl(){
+  [...$('#paletteList').children].forEach((c,i)=>c.classList.toggle('hl',i===palHl));
+  const c=$('#paletteList').children[palHl];if(c)c.scrollIntoView({block:'nearest'});
+}
+function runPal(it){
+  closePalette();
+  if(it.sec)openSection(it.sec.id);
+  else it.cmd[2]();
+}
+/* ============================= HELP ============================= */
+function helpDlg(){
+  const K=(k,d)=>el('tr',null,el('td',null,el('span',{class:'kbd'},k)),el('td',{class:'dim'},d));
+  showModal(el('div',{class:'modal'},el('h2',null,'Gamebook Studio — help'),
+    el('div',{class:'small',style:'margin-bottom:12px'},
+      'A file-based gamebook authoring tool. Your book lives in a single .gamebook.json file — keep it in any folder, including OneDrive/Drive/Dropbox folders. Autosave keeps a recovery copy in the browser; backups are kept on every save.'),
+    el('table',null,
+      K('Ctrl+K  /  Ctrl+P','Command palette — jump to any section or command'),
+      K('Ctrl+1…4','Switch mode: Write · Sheet · Graph · Play'),
+      K('Ctrl+S','Save'),K('Ctrl+O','Open'),K('Ctrl+E','Export'),
+      K('Alt+N','New section'),K('Alt+C','Add choice to current section'),
+      K('Alt+← / Alt+→','Back / forward through visited sections'),
+      K('Ctrl+Z / Ctrl+Shift+Z','Undo / redo structural changes (outside text fields)'),
+      K('Enter in choice text','Jump to its target picker'),
+      K('? (outside text fields)','This help')),
+    el('div',{class:'small dim',style:'margin-top:12px'},
+      'Tips: in any target box, type a number or title — or type a new title and choose “create” to make the section on the spot. Numbers are display labels; links never break when you shuffle or renumber. Graph: drag empty space to pan, wheel/pinch to zoom, drag nodes to arrange (positions are saved), drag from the ⊕ on a selected node onto another node to link them — or onto empty space to create a new linked section. Double-click empty space for a new section, double-click a node to open it in Write, Delete removes the selected section. Use Re-layout to return to the automatic arrangement.'),
+    el('div',{class:'mbtns'},el('button',{class:'primary',onclick:closeModal},'Close'))));
+}
+/* ============================= SAMPLE & STRESS BOOKS ============================= */
+function sampleBook(){
+  const mk=(id,number,title,text,o={})=>Object.assign({id,number,title,text,tags:o.tags||[],status:o.status||'done',
+    lockNumber:!!o.lock,onEnter:o.onEnter||[],choices:o.choices||[],combat:o.combat||null,ending:o.ending||null,notes:o.notes||''},{});
+  const ch=(text,target,o={})=>Object.assign({id:'c'+Math.random().toString(36).slice(2,8),text,kind:o.check?'check':'normal',
+    target:target==null?null:(typeof target==='number'?'s'+target:target),
+    requires:o.req||[],effects:o.fx||[],hideIfUnmet:!!o.hide,check:o.check||null},{});
+  const b=blankBook('The Warren of Korrak');
+  b.meta.author='Sample adventure';
+  b.meta.notes='A short Fighting-Fantasy-style demo exercising stats, dice tests, items, conditions, hidden choices and combat.';
+  b.stats=[
+    {id:'skill',name:'SKILL',initial:'1d6+6',min:'0',max:''},
+    {id:'stamina',name:'STAMINA',initial:'2d6+12',min:'0',max:''},
+    {id:'luck',name:'LUCK',initial:'1d6+6',min:'0',max:''},
+    {id:'gold',name:'GOLD',initial:'5',min:'0',max:''}
+  ];
+  b.items=[
+    {id:'sword',name:'Sword',startWith:true},
+    {id:'lantern',name:'Lantern',startWith:true},
+    {id:'rope',name:'Rope',startWith:false},
+    {id:'key',name:'Brass Key',startWith:false},
+    {id:'herb',name:'Healing Herb',startWith:false}
+  ];
+  b.flags=[
+    {id:'warned',name:'Heard the hermit’s warning'},
+    {id:'unlocked',name:'Iron door opened'}
+  ];
+  Object.assign(b.settings,{start:'s1',skillStat:'skill',staminaStat:'stamina',damage:2,includeTitles:false,appendTurnTo:true});
+  b.sections=[
+    mk('s1',1,'The village of Harrow’s End',
+      'Dawn mist clings to the thatch of Harrow’s End. For a week now, goblins from the old warren have crept down at night to steal grain, tools — and lately, children’s shoes left by the door. The village has scraped together fifty gold pieces for whoever clears the warren of its master, the creature the goblins call **Korrak the Gnawed**.\n\nYou check your pack one last time.',
+      {lock:true,tags:['act1'],choices:[
+        ch('Take the forest road at once',2),
+        ch('Call in at the Broken Flagon first',3)]}),
+    mk('s2',2,'The forest fork',
+      'The road narrows under black pines and splits at a lichen-crusted standing stone. The left path falls towards a dark cave mouth in a bluff. The right climbs along a cliff, where gulls wheel over the drop.',
+      {tags:['act1'],choices:[
+        ch('Take the low path to the cave mouth',4),
+        ch('Climb the cliff path',5),
+        ch('Go back to the village',1)]}),
+    mk('s3',3,'The Broken Flagon',
+      'The tavern is empty but for the keeper and a hermit nursing a cup of sour wine. The keeper sells travelling supplies; the hermit watches you with one clouded eye.',
+      {tags:['act1'],choices:[
+        ch('Listen to the hermit',14),
+        ch('Buy a healing herb (3 GOLD)',2,{req:[{t:'statCmp',stat:'gold',op:'>=',value:3}],fx:[{t:'statAdd',stat:'gold',amount:-3},{t:'addItem',item:'herb'}]}),
+        ch('Head for the forest road',2)]}),
+    mk('s4',4,'The cave mouth',
+      'Cold air breathes out of the dark. Scratched into the rock above the opening, in goblin-script: *“OURS.”* The passage beyond swallows light whole.',
+      {tags:['act1'],choices:[
+        ch('Enter with your lantern lit',6,{req:[{t:'hasItem',item:'lantern'}]}),
+        ch('Feel your way in blind',null,{check:{dice:'2d6',op:'<=',stat:'skill',success:'s6',fail:'s15'}}),
+        ch('Return to the fork',2)]}),
+    mk('s5',5,'The cliff path',
+      'Halfway along, the path has crumbled away. A narrow ledge remains, slick with spray. You will have to trust your footing — and your luck.',
+      {tags:['act1'],choices:[
+        ch('Test your luck on the ledge',null,{check:{dice:'2d6',op:'<=',stat:'luck',success:'s16',fail:'s17'}})]}),
+    mk('s6',6,'The guard post',
+      'Your light falls on a squat goblin in rusted scraps of mail, picking its teeth with a splinter of bone. It sees you, shrieks, and snatches up a cleaver.',
+      {tags:['act2'],combat:{enemies:[{name:'Goblin Guard',skill:5,stamina:5}],win:'s7',lose:null,escape:{target:'s2',minRound:1},damage:''}}),
+    mk('s7',7,'The crossroads',
+      'Beyond the guard post the warren opens into a junction of three gnawed tunnels. To the left, an **iron door** stands rust-streaked and shut. Ahead, the main run continues past a reeking pit. The smallest tunnel bears old, deliberate chisel marks.',
+      {tags:['act2'],choices:[
+        ch('Try the iron door',8),
+        ch('Follow the main run past the pit',9),
+        ch('Seek the shrine the hermit spoke of',10,{req:[{t:'flagSet',flag:'warned'}],hide:true})]}),
+    mk('s8',8,'The iron door',
+      'The door is solid iron, dwarf-work by the look of it, with a brass lock green with age. It does not so much as rattle when you heave at it.',
+      {tags:['act2'],choices:[
+        ch('Unlock it with the brass key',11,{req:[{t:'hasItem',item:'key'}],fx:[{t:'setFlag',flag:'unlocked'}]}),
+        ch('Leave it and go back',7)]}),
+    mk('s9',9,'The spiked pit',
+      'The walkway around the pit has been deliberately narrowed — a goblin toll-trap. Far below, pale spikes glisten. A confident step or a broken neck.',
+      {tags:['act2'],choices:[
+        ch('Edge across (test your skill)',null,{check:{dice:'2d6',op:'<=',stat:'skill',success:'s12',fail:'s18'}}),
+        ch('Go back to the crossroads',7)]}),
+    mk('s10',10,'The forgotten shrine',
+      'Chisel marks open into a tiny vaulted cell. A spring rises in a stone bowl; the water tastes of iron and starlight. Whatever was worshipped here, it bore no love for goblins.\n\n*You feel fortune settle over you like a cloak.*',
+      {tags:['act2'],onEnter:[{t:'statAdd',stat:'luck',amount:2}],choices:[
+        ch('Eat the healing herb here',7,{req:[{t:'hasItem',item:'herb'}],fx:[{t:'removeItem',item:'herb'},{t:'statAdd',stat:'stamina',amount:6}]}),
+        ch('Return to the crossroads',7)]}),
+    mk('s11',11,'Korrak’s lair',
+      'The iron door swings wide on a hall of stolen things: grain sacks, copper pots, one small pair of shoes. On a throne of barrel-staves sits a goblin twice the size of any other, his lip torn away from yellow teeth.\n\n**“MINE,”** says Korrak the Gnawed, and takes up his axe.',
+      {tags:['act3'],combat:{enemies:[{name:'Korrak the Gnawed',skill:8,stamina:9}],win:'s13',lose:null,escape:null,damage:''}}),
+    mk('s12',12,'The toll-keeper’s vault',
+      'On the far side of the pit, a niche holds the toll-keeper’s strongbox — unlocked, goblins trusting the pit more than any lock. Inside: a worn **brass key** and a purse of coins.',
+      {tags:['act2'],onEnter:[{t:'addItem',item:'key'},{t:'statAdd',stat:'gold',amount:10}],choices:[
+        ch('Return to the crossroads',7)]}),
+    mk('s13',13,'The warren’s hoard',
+      'Korrak falls like a dropped sack. In the silence, you fill your pack with the village’s stolen goods — and the bounty is yours. The walk home is long, and the bells of Harrow’s End ring you in.\n\n*The children get their shoes back.*',
+      {tags:['act3'],onEnter:[{t:'statAdd',stat:'gold',amount:50}],ending:{kind:'victory'}}),
+    mk('s14',14,'The hermit’s warning',
+      '“The warren was a holy place before the goblins,” the hermit rasps. “A shrine cut into the smallest tunnel — look for the chisel marks. Drink what rises there. And boy —” he grips your wrist, “— *do not* cross the pit without sure feet.”',
+      {tags:['act1'],onEnter:[{t:'setFlag',flag:'warned'}],choices:[
+        ch('Thank him and take the forest road',2)]}),
+    mk('s15',15,'A blind stumble',
+      'You grope along the wall until the floor simply is not there. You crash down a scree slope in roaring darkness and crawl back to daylight, bruised and bleeding.',
+      {tags:['act1'],onEnter:[{t:'statAdd',stat:'stamina',amount:-2}],choices:[
+        ch('Limp back to the fork',2)]}),
+    mk('s16',16,'The hidden ledge',
+      'Your feet find every hold as if the cliff itself were helping. Halfway across you discover why the path was cut: a coil of weathered but sound **rope**, cached in a cranny by some earlier traveller.',
+      {tags:['act1'],onEnter:[{t:'addItem',item:'rope'}],choices:[
+        ch('Climb down to the cave mouth',4)]}),
+    mk('s17',17,'The crumbling edge',
+      'The ledge sighs and lets go. You catch a root, swing, and slam into the cliff face hard enough to taste blood, then haul yourself back the way you came.',
+      {tags:['act1'],onEnter:[{t:'statAdd',stat:'stamina',amount:-4}],choices:[
+        ch('Struggle back to the fork',2)]}),
+    mk('s18',18,'Impaled',
+      'Your foot skids on goblin-grease. You fall — not far enough to die, just far enough to meet a spike with your thigh. White-hot pain. You drag yourself off it and up the far side.',
+      {tags:['act2'],onEnter:[{t:'statAdd',stat:'stamina',amount:-6}],choices:[
+        ch('Stagger on to the toll-keeper’s niche',12),
+        ch('Retreat to the crossroads',7)]})
+  ];
+  b.counters.id=60;
+  return b;
+}
+function stressBook(n){
+  const W1=['Dark','Silent','Broken','Gilded','Sunken','Howling','Frozen','Verdant','Crimson','Forgotten'];
+  const W2=['Hall','Bridge','Stair','Gate','Forest','Crypt','Tower','Marsh','Passage','Shrine'];
+  const b=blankBook('Stress Test — '+n+' sections');
+  b.stats=[{id:'skill',name:'SKILL',initial:'1d6+6',min:'0',max:''},{id:'stamina',name:'STAMINA',initial:'2d6+12',min:'0',max:''}];
+  Object.assign(b.settings,{start:'s1',skillStat:'skill',staminaStat:'stamina'});
+  const lorem='You press on through shifting shadows and the smell of cold stone. Something scrapes in the dark ahead, and the path divides once more before you.';
+  for(let i=1;i<=n;i++){
+    const isEnd=i===n||(i>20&&Math.random()<0.02);
+    const sec={id:'s'+i,number:i,title:W1[Math.floor(Math.random()*10)]+' '+W2[Math.floor(Math.random()*10)],
+      text:lorem,tags:[],status:STATUSES[Math.floor(Math.random()*4)],lockNumber:i===1,
+      onEnter:[],choices:[],combat:null,ending:isEnd?{kind:Math.random()<0.5?'victory':'death'}:null,notes:''};
+    if(!isEnd){
+      const nch=1+Math.floor(Math.random()*3);
+      for(let c=0;c<nch;c++){
+        let tgt;
+        if(Math.random()<0.06&&i>10)tgt=1+Math.floor(Math.random()*(i-1));
+        else tgt=Math.min(n,i+1+Math.floor(Math.random()*60));
+        sec.choices.push({id:'c'+i+'_'+c,text:'Path '+(c+1),kind:'normal',target:'s'+tgt,requires:[],effects:[],hideIfUnmet:false,check:null});
+      }
+    }
+    b.sections.push(sec);
+  }
+  b.counters.id=n+10;
+  return b;
+}
+/* ============================= EVENT WIRING & INIT ============================= */
+function wireEvents(){
+  $('#menuBtn').addEventListener('click',e=>{e.stopPropagation();toggleMenu();});
+  document.addEventListener('click',e=>{
+    const p=$('#menuPanel');
+    if(!p.classList.contains('hidden')&&!p.contains(e.target))toggleMenu(false);
+  });
+  $('#bookTitle').addEventListener('click',()=>bookSettingsDlg());
+  $('#issuesBadge').addEventListener('click',issuesDlg);
+  $('#saveBtn').addEventListener('click',()=>saveFileCmd());
+  $$('#modeTabs button').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+  $('#sbToggle').addEventListener('click',()=>$('#view-write').classList.toggle('sb-open'));
+  $('#psToggle').addEventListener('click',()=>$('#view-play').classList.toggle('ps-open'));
+  $('#sbSearch').addEventListener('input',function(){App.sbQ=this.value;renderSidebar();});
+  $('#sbNew').addEventListener('click',()=>addSection());
+  $('#shSearch').addEventListener('input',function(){App.sheet.q=this.value;renderSheet();});
+  $('#shNew').addEventListener('click',()=>{addSection({silent:true});renderSheet();toast('Section added');});
+  $('#fileInput').addEventListener('change',async function(){
+    const f=this.files[0];this.value='';
+    if(!f)return;
+    loadParsed(await f.text(),{fileName:f.name});
+  });
+  $('#plRestart').addEventListener('click',()=>playRestart());
+  $('#plFromHere').addEventListener('click',playFromHere);
+  $('#plBack').addEventListener('click',playBack);
+  $('#plReseed').addEventListener('click',()=>{App.play.seed=(Math.random()*0xffffffff)>>>0;playRestart();});
+  $('#plCopyLog').addEventListener('click',async()=>{
+    if(!App.play.state)return;
+    const txt='Seed '+App.play.seed+'\n'+App.play.state.log.map(l=>l.m).join('\n');
+    try{await navigator.clipboard.writeText(txt);toast('Transcript copied');}
+    catch(e){toast('Could not copy','err');}
+  });
+  const pin=$('#paletteInput');
+  pin.addEventListener('input',()=>buildPalette(pin.value));
+  pin.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'){e.preventDefault();palHl=Math.min(palHl+1,palItems.length-1);paintPalHl();}
+    else if(e.key==='ArrowUp'){e.preventDefault();palHl=Math.max(palHl-1,0);paintPalHl();}
+    else if(e.key==='Enter'){e.preventDefault();if(palItems[palHl])runPal(palItems[palHl]);}
+    else if(e.key==='Escape'){closePalette();}
+  });
+  $('#paletteWrap').addEventListener('mousedown',e=>{if(e.target.id==='paletteWrap')closePalette();});
+  document.addEventListener('keydown',e=>{
+    const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)||e.target.isContentEditable;
+    const mod=e.ctrlKey||e.metaKey;
+    const k=e.key.toLowerCase();
+    if(mod&&(k==='k'||k==='p')){e.preventDefault();openPalette();return;}
+    if(mod&&k==='s'){e.preventDefault();saveFileCmd();return;}
+    if(mod&&k==='o'){e.preventDefault();openFileCmd();return;}
+    if(mod&&k==='e'){e.preventDefault();exportDlg();return;}
+    if(mod&&['1','2','3','4'].includes(e.key)){e.preventDefault();setMode(['write','sheet','graph','play'][+e.key-1]);return;}
+    if(e.altKey&&k==='n'){e.preventDefault();addSection();return;}
+    if(e.altKey&&k==='c'){e.preventDefault();const sec=S(App.cur);
+      if(sec&&App.mode==='write'){sec.choices.push(newChoiceObj());touch();renderEditor('.choice:last-of-type .chtext');}return;}
+    if(e.altKey&&e.key==='ArrowLeft'){e.preventDefault();goBack();return;}
+    if(e.altKey&&e.key==='ArrowRight'){e.preventDefault();goFwd();return;}
+    if(!typing&&mod&&!e.shiftKey&&k==='z'){e.preventDefault();undo();return;}
+    if(!typing&&mod&&(k==='y'||(e.shiftKey&&k==='z'))){e.preventDefault();redo();return;}
+    if(!typing&&App.mode==='graph'&&(e.key==='Delete'||e.key==='Backspace')&&App.cur
+      &&$('#modalWrap').classList.contains('hidden')&&$('#paletteWrap').classList.contains('hidden')){
+      e.preventDefault();deleteSection(App.cur);return;}
+    if(!typing&&e.key==='?'){helpDlg();return;}
+    if(e.key==='Escape'){
+      if(!$('#paletteWrap').classList.contains('hidden'))closePalette();
+      else toggleMenu(false);
+    }
+  });
+  window.addEventListener('beforeunload',e=>{
+    if(App.dirty){e.preventDefault();e.returnValue='';}
+  });
+}
+async function init(){
+  /* PWA: manifest + service worker, only when served over http(s) —
+     dormant when the app is opened as a local file. */
+  const secure=location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1';
+  if(secure){
+    if(!document.querySelector('link[rel=manifest]'))
+      document.head.append(el('link',{rel:'manifest',href:'manifest.webmanifest'}));
+    if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault();
+    App.installPrompt=e;
+    try{
+      if(!localStorage.getItem('gbs-install-hint')){
+        localStorage.setItem('gbs-install-hint','1');
+        toast('Tip: install Gamebook Studio as an app — Ctrl+K → “Install as app”');
+      }
+    }catch(err){}
+  });
+  window.addEventListener('appinstalled',()=>{App.installPrompt=null;toast('Installed — launch it from your home screen or app list');});
+  let th=null;
+  try{th=localStorage.getItem('gbs-theme');}catch(e){}
+  if(!th)th=window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.body.dataset.theme=th;
+  await store.init();
+  wireEvents();
+  setupGraph();
+  const auto=await store.get('autosave');
+  let loaded=false;
+  if(auto&&auto.json){
+    try{
+      App.book=normalizeBook(JSON.parse(auto.json));
+      loadBook(App.book,{fileName:auto.fileName,dirty:auto.dirty});
+      loaded=true;
+      if(auto.dirty)showBanner('Recovered unsaved work from '+fmtTime(auto.time)+(auto.fileName?' ('+auto.fileName+'). Remember to save.':'. Use Save As to write it to a file.'));
+    }catch(e){console.warn('autosave recovery failed',e);}
+  }
+  if(!loaded){
+    loadBook(starterBook());
+    showBanner('Welcome to Gamebook Studio. Your book autosaves in the browser; use Save (Ctrl+S) to write a project file you can keep anywhere.',
+      [{label:'Load sample book',fn:loadSampleCmd},{label:'Help',fn:helpDlg}]);
+  }
+  if(window.showOpenFilePicker){
+    const last=await store.get('lastFile');
+    if(last&&last.handle&&App.fileName===last.name&&!App.fileHandle)App.fileHandle=last.handle;
+  }
+}
+init();
+</script>
+</body>
+</html>
