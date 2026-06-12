@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f2ed">
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1d1e21">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Gamebook Studio</title>
 <style>
@@ -22,15 +22,23 @@
   --sans:system-ui,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
   --mono:ui-monospace,Consolas,'Cascadia Mono',monospace;
 }
+/* High-contrast dark theme: designed for e-ink as well as OLED/LCD.
+   Pure black/white base, bright saturated accents, strong borders —
+   e-ink washes out subtle shade differences, so edges carry the structure. */
 body[data-theme="dark"]{
-  --bg:#1d1e21; --bg2:#26272b; --bg3:#2e2f34; --bg4:#393a40;
-  --fg:#e8e6e1; --fg-dim:#a4a09a; --fg-faint:#6d6a64;
-  --border:#3a3b41; --border2:#4a4b52;
-  --accent:#8d7bef; --accent-soft:#8d7bef2a; --accent-fg:#16151d;
-  --danger:#e06464; --danger-soft:#e064641f; --warn:#d6a23a; --warn-soft:#d6a23a1f; --ok:#5cb86f;
-  --st-todo:#d8b13a; --st-draft:#6d9fe0; --st-review:#c184d6; --st-done:#5cb86f;
-  --sel:#8d7bef26; --shadow:0 8px 28px rgba(0,0,0,.5);
+  --bg:#000000; --bg2:#000000; --bg3:#1f1f1f; --bg4:#363636;
+  --fg:#ffffff; --fg-dim:#d6d6d6; --fg-faint:#a0a0a0;
+  --border:#7d7d7d; --border2:#b8b8b8;
+  --accent:#c3b3ff; --accent-soft:#3b2f8c; --accent-fg:#000000;
+  --danger:#ff6b6b; --danger-soft:#591414; --warn:#ffd23f; --warn-soft:#4d3c00; --ok:#54e87f;
+  --st-todo:#ffd23f; --st-draft:#6fc3ff; --st-review:#e08aff; --st-done:#54e87f;
+  --sel:#3b2f8c; --shadow:0 8px 28px rgba(0,0,0,.9);
 }
+/* dark-only reinforcements: affordances that relied on subtle shade shifts */
+body[data-theme="dark"] #modeTabs button.active{outline:1px solid var(--border2);box-shadow:none}
+body[data-theme="dark"] .pchoice:hover:not(:disabled),
+body[data-theme="dark"] .pli.hl,body[data-theme="dark"] .ddi.hl,body[data-theme="dark"] .ddi:hover{outline:1px solid var(--accent)}
+body[data-theme="dark"] .slitem.sel{outline:1px solid var(--accent)}
 /* ============================= BASE ============================= */
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -662,7 +670,7 @@ const App={
   issues:[], issueBySec:{}, backlinks:{},
   play:{state:null,history:[],seed:1},
   sheet:{sort:'number',dir:1,q:''},
-  graph:{x:40,y:40,k:1,pos:{},edges:[],built:false,everBuilt:false,sideOpen:true,linkDrag:null},
+  graph:{x:40,y:40,k:1,pos:{},edges:[],built:false,needsFit:true,sideOpen:true,linkDrag:null},
   sbQ:''
 };
 /* ============================= BOOK MODEL ============================= */
@@ -938,9 +946,8 @@ function setMode(m){
   if(m==='write'){renderSidebar();renderEditor();}
   else if(m==='sheet')renderSheet();
   else if(m==='graph'){
-    const first=!App.graph.everBuilt;
     buildGraph();
-    if(first)graphFit();else drawGraph();
+    if(App.graph.needsFit)graphFit();else drawGraph();
     renderGraphSide();
   }
   else if(m==='play'){if(!App.play.state)playRestart(false);renderPlay();}
@@ -954,7 +961,7 @@ function loadBook(b,opts={}){
   App.cur=App.book.settings.start&&S(App.book.settings.start)?App.book.settings.start:(App.book.sections[0]?App.book.sections[0].id:null);
   App.navBack=[];App.navFwd=[];App.undoStack=[];App.redoStack=[];
   App.play={state:null,history:[],seed:(Math.random()*0xffffffff)>>>0};
-  App.graph={x:40,y:40,k:1,pos:{},edges:[],built:false,everBuilt:false,sideOpen:true,linkDrag:null};
+  App.graph={x:40,y:40,k:1,pos:{},edges:[],built:false,needsFit:true,sideOpen:true,linkDrag:null};
   rebuildDerived(); refreshIssueUI(); updateSaveStateUI();
   setMode('write');
   scheduleAutosave();
@@ -1552,7 +1559,7 @@ function buildGraph(){
   }
   /* manually placed nodes (dragged in graph mode) override the automatic layout */
   for(const s of b.sections)if(s.gpos)pos[s.id]={x:s.gpos.x,y:s.gpos.y};
-  g.pos=pos;g.edges=edges;g.built=true;g.everBuilt=true;
+  g.pos=pos;g.edges=edges;g.built=true;
 }
 function graphColors(){
   const cs=getComputedStyle(document.body);
@@ -1693,9 +1700,11 @@ function graphFit(){
   buildGraph();
   const ps=Object.values(g.pos);
   if(!ps.length||!wrapEl)return;
+  const W=wrapEl.clientWidth,H=wrapEl.clientHeight,pad=40;
+  if(W<60||H<60){g.needsFit=true;return;} /* container hidden/zero-sized — retry when drawable */
+  g.needsFit=false;
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
   for(const p of ps){x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x+NODE_W);y1=Math.max(y1,p.y+NODE_H);}
-  const W=wrapEl.clientWidth,H=wrapEl.clientHeight,pad=40;
   const k=Math.min((W-pad*2)/(x1-x0||1),(H-pad*2)/(y1-y0||1),1.15);
   g.k=Math.max(k,0.06);
   g.x=(W-(x1-x0)*g.k)/2-x0*g.k;
@@ -1852,7 +1861,10 @@ function setupGraph(){
     createSectionAt((wrapEl.clientWidth/2-g.x)/g.k,(wrapEl.clientHeight/2-g.y)/g.k,null);
   });
   $('#gRelayout').addEventListener('click',relayoutGraph);
-  new ResizeObserver(()=>{if(App.mode==='graph')drawGraph();}).observe(wrapEl);
+  new ResizeObserver(()=>{
+    if(App.mode!=='graph')return;
+    if(App.graph.needsFit)graphFit();else drawGraph();
+  }).observe(wrapEl);
 }
 /* ---- graph editing ---- */
 function createSectionAt(wx,wy,fromSec){
@@ -2146,7 +2158,7 @@ function exportMarkdownText(){
   return L.join('\n')+'\n';
 }
 const PLAYER_CSS='*{box-sizing:border-box}body{margin:0;font:16px/1.6 Georgia,serif;background:#f5f2ea;color:#21201c;display:flex;justify-content:center}'+
-'@media(prefers-color-scheme:dark){body{background:#1d1e21;color:#e8e6e1}aside,header{background:#26272b!important;border-color:#3a3b41!important}.ch{background:#26272b!important;border-color:#4a4b52!important;color:#e8e6e1}.fx{background:#8d7bef22!important}}'+
+'@media(prefers-color-scheme:dark){body{background:#000;color:#fff}aside,header{background:#000!important;border-color:#8a8a8a!important}.ch{background:#000!important;border-color:#b8b8b8!important;color:#fff}.fx{background:#3b2f8c!important}.pri{background:#c3b3ff;border-color:#c3b3ff;color:#000}button{border-color:#8a8a8a}.dim{opacity:.78}.end{border-color:#b8b8b8}.combat{border-color:#ff6b6b}.ch .why{color:#ff6b6b}}'+
 '#app{width:min(1000px,100%);display:grid;grid-template-columns:1fr 250px;grid-template-rows:auto 1fr;min-height:100vh}'+
 'header{grid-column:1/3;display:flex;gap:8px;align-items:center;padding:10px 16px;background:#fbfaf7;border-bottom:1px solid #d8d4c8;font-family:system-ui,sans-serif;font-size:14px}'+
 'header .sp{flex:1}button{font:14px system-ui,sans-serif;padding:6px 12px;border-radius:6px;border:1px solid #aaa;background:transparent;color:inherit;cursor:pointer}'+
