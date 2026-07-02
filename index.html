@@ -28,17 +28,42 @@
 body[data-theme="dark"]{
   --bg:#000000; --bg2:#000000; --bg3:#1f1f1f; --bg4:#363636;
   --fg:#ffffff; --fg-dim:#d6d6d6; --fg-faint:#a0a0a0;
-  --border:#7d7d7d; --border2:#b8b8b8;
+  --border:#a8a8a8; --border2:#e2e2e2;
   --accent:#c3b3ff; --accent-soft:#3b2f8c; --accent-fg:#000000;
   --danger:#ff6b6b; --danger-soft:#591414; --warn:#ffd23f; --warn-soft:#4d3c00; --ok:#54e87f;
   --st-todo:#ffd23f; --st-draft:#6fc3ff; --st-review:#e08aff; --st-done:#54e87f;
   --sel:#3b2f8c; --shadow:0 8px 28px rgba(0,0,0,.9);
 }
-/* dark-only reinforcements: affordances that relied on subtle shade shifts */
-body[data-theme="dark"] #modeTabs button.active{outline:1px solid var(--border2);box-shadow:none}
+/* dark-only reinforcements: e-ink panels swallow 1px hairlines, so every
+   structural stroke is at least 2px and outlines replace subtle shade shifts */
+body[data-theme="dark"] #modeTabs button.active{outline:2px solid var(--border2);box-shadow:none}
 body[data-theme="dark"] .pchoice:hover:not(:disabled),
-body[data-theme="dark"] .pli.hl,body[data-theme="dark"] .ddi.hl,body[data-theme="dark"] .ddi:hover{outline:1px solid var(--accent)}
-body[data-theme="dark"] .slitem.sel{outline:1px solid var(--accent)}
+body[data-theme="dark"] .pli.hl,body[data-theme="dark"] .ddi.hl,body[data-theme="dark"] .ddi:hover{outline:2px solid var(--accent)}
+body[data-theme="dark"] .slitem.sel{outline:2px solid var(--accent)}
+body[data-theme="dark"] button,
+body[data-theme="dark"] input[type=text],body[data-theme="dark"] input[type=number],body[data-theme="dark"] input[type=search],
+body[data-theme="dark"] select,body[data-theme="dark"] textarea{border-width:2px}
+body[data-theme="dark"] .choice,body[data-theme="dark"] .pchoice,body[data-theme="dark"] .pcombat{border-width:2px}
+body[data-theme="dark"] .combatbox{border-width:2px;border-left-width:5px}
+body[data-theme="dark"] .pending{border-width:3px}
+body[data-theme="dark"] #topbar{border-bottom-width:2px}
+body[data-theme="dark"] #sidebar{border-right-width:2px}
+body[data-theme="dark"] #playSide,body[data-theme="dark"] #graphSide{border-left-width:2px}
+body[data-theme="dark"] #playSide .ps-sec{border-bottom-width:2px}
+body[data-theme="dark"] .sheettools,body[data-theme="dark"] .graphtools,body[data-theme="dark"] .playtools,
+body[data-theme="dark"] #sidebar .sbtools,body[data-theme="dark"] #sbCount{border-bottom-width:2px;border-top-width:2px}
+body[data-theme="dark"] .sheettools,body[data-theme="dark"] .graphtools,body[data-theme="dark"] .playtools,
+body[data-theme="dark"] #sidebar .sbtools{border-top-width:0}
+body[data-theme="dark"] #sheetWrap th{border-bottom-width:3px}
+body[data-theme="dark"] #sheetWrap td{border-bottom-width:2px}
+body[data-theme="dark"] .menupanel,body[data-theme="dark"] .modal,body[data-theme="dark"] .ddrop,body[data-theme="dark"] #palette{border-width:2px}
+body[data-theme="dark"] #paletteInput{border-bottom-width:2px}
+body[data-theme="dark"] .msep{height:2px}
+body[data-theme="dark"] .linkchip,body[data-theme="dark"] .gchip,body[data-theme="dark"] .kbd{border-width:2px}
+body[data-theme="dark"] #issuesBadge{border-width:2px}
+body[data-theme="dark"] .tabbar{border-bottom-width:2px}
+body[data-theme="dark"] .tabbar button.active{border-bottom-width:3px}
+body[data-theme="dark"] #modeTabs button{border:none}
 /* ============================= BASE ============================= */
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -1580,6 +1605,9 @@ function drawGraph(){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,W,H);
   const C=graphColors();
+  /* e-ink: dark mode gets markedly thicker canvas strokes — hairlines vanish on those panels */
+  const ink=document.body.dataset.theme==='dark'?1.9:1;
+  App.graph.ink=ink;
   const showTitles=$('#gShowTitles').checked;
   const vis=p=>{const sx=p.x*g.k+g.x,sy=p.y*g.k+g.y;return sx>-300&&sx<W+300&&sy>-200&&sy<H+200;};
   ctx.save();
@@ -1605,7 +1633,7 @@ function drawGraph(){
     if(a){
       ctx.save();
       ctx.strokeStyle=C.accent;
-      ctx.lineWidth=2/Math.max(g.k,.4);
+      ctx.lineWidth=2*ink/Math.max(g.k,.4);
       ctx.setLineDash([7/g.k,6/g.k]);
       ctx.beginPath();
       ctx.moveTo(a.x+NODE_W,a.y+NODE_H/2);
@@ -1624,11 +1652,11 @@ function drawGraph(){
     ctx.beginPath();
     roundRect(ctx,p.x,p.y,NODE_W,NODE_H,8);
     ctx.fillStyle=isDropTarget?C.accent+'33':C.bg2;ctx.fill();
-    ctx.lineWidth=((s.id===selId||isDropTarget)?2.4:1.2)/Math.max(g.k,.4);
+    ctx.lineWidth=((s.id===selId||isDropTarget)?2.4:1.2)*ink/Math.max(g.k,.4);
     ctx.strokeStyle=(s.id===selId||isDropTarget)?C.accent:(lev==='err'?C.danger:lev==='warn'?C.warn:C.border);
     ctx.stroke();
     ctx.fillStyle=C.st[s.status]||C.dim;
-    ctx.fillRect(p.x,p.y+4,3.4,NODE_H-8);
+    ctx.fillRect(p.x,p.y+4,3.4*ink,NODE_H-8);
     if(g.k>0.32){
       ctx.fillStyle=C.fg;
       ctx.font='700 '+fontPx+'px '+'ui-monospace,Consolas,monospace';
@@ -1651,7 +1679,7 @@ function drawGraph(){
     ctx.beginPath();
     ctx.arc(cx2,cy2,r,0,Math.PI*2);
     ctx.fillStyle=C.accent;ctx.fill();
-    ctx.lineWidth=1.6/Math.max(g.k,.4);
+    ctx.lineWidth=1.6*ink/Math.max(g.k,.4);
     ctx.strokeStyle=C.bg2;ctx.stroke();
     ctx.fillStyle=C.bg2;
     ctx.font='700 '+(r*1.5)+'px system-ui,sans-serif';
@@ -1672,9 +1700,10 @@ function roundRect(ctx,x,y,w,h,r){
   ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
 }
 function drawEdge(ctx,a,b,color,k,bold){
+  const ink=App.graph.ink||1;
   const x1=a.x+NODE_W,y1=a.y+NODE_H/2,x2=b.x,y2=b.y+NODE_H/2;
   ctx.strokeStyle=color;
-  ctx.lineWidth=(bold?2.2:1.2)/Math.max(k,.4);
+  ctx.lineWidth=(bold?2.2:1.2)*ink/Math.max(k,.4);
   ctx.beginPath();
   if(x2>x1){
     const mx=(x1+x2)/2;
@@ -1686,11 +1715,10 @@ function drawEdge(ctx,a,b,color,k,bold){
   ctx.stroke();
   /* arrowhead */
   if(k>0.25){
-    const ang=x2>x1?0:Math.atan2(y2-(y2-30),70);
     ctx.beginPath();
     ctx.moveTo(x2,y2);
-    ctx.lineTo(x2-8,y2-4);
-    ctx.lineTo(x2-8,y2+4);
+    ctx.lineTo(x2-8*ink,y2-4*ink);
+    ctx.lineTo(x2-8*ink,y2+4*ink);
     ctx.closePath();
     ctx.fillStyle=color;ctx.fill();
   }
@@ -2158,7 +2186,7 @@ function exportMarkdownText(){
   return L.join('\n')+'\n';
 }
 const PLAYER_CSS='*{box-sizing:border-box}body{margin:0;font:16px/1.6 Georgia,serif;background:#f5f2ea;color:#21201c;display:flex;justify-content:center}'+
-'@media(prefers-color-scheme:dark){body{background:#000;color:#fff}aside,header{background:#000!important;border-color:#8a8a8a!important}.ch{background:#000!important;border-color:#b8b8b8!important;color:#fff}.fx{background:#3b2f8c!important}.pri{background:#c3b3ff;border-color:#c3b3ff;color:#000}button{border-color:#8a8a8a}.dim{opacity:.78}.end{border-color:#b8b8b8}.combat{border-color:#ff6b6b}.ch .why{color:#ff6b6b}}'+
+'@media(prefers-color-scheme:dark){body{background:#000;color:#fff}aside{background:#000!important;border-color:#a8a8a8!important;border-left-width:2px!important}header{background:#000!important;border-color:#a8a8a8!important;border-bottom-width:2px!important}.ch{background:#000!important;border-color:#e2e2e2!important;border-width:2px!important;color:#fff}.fx{background:#3b2f8c!important}.pri{background:#c3b3ff;border-color:#c3b3ff;color:#000}button{border-color:#a8a8a8;border-width:2px}.dim{opacity:.78}.end{border-color:#e2e2e2;border-width:3px}.combat{border-color:#ff6b6b;border-width:2px}.ch .why{color:#ff6b6b}}'+
 '#app{width:min(1000px,100%);display:grid;grid-template-columns:1fr 250px;grid-template-rows:auto 1fr;min-height:100vh}'+
 'header{grid-column:1/3;display:flex;gap:8px;align-items:center;padding:10px 16px;background:#fbfaf7;border-bottom:1px solid #d8d4c8;font-family:system-ui,sans-serif;font-size:14px}'+
 'header .sp{flex:1}button{font:14px system-ui,sans-serif;padding:6px 12px;border-radius:6px;border:1px solid #aaa;background:transparent;color:inherit;cursor:pointer}'+
